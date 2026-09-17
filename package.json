@@ -8,6 +8,6 @@
         "dev:backend": "bun run --cwd packages/backend dev",
         "build:frontend": "bun run --cwd packages/frontend build",
         "watch:frontend": "bun run --cwd packages/frontend watch",
-        "dev": "bun run build:frontend; bun run watch:frontend & bun run dev:backend"
+        "dev": "bun run build:frontend && sh -c 'bun run watch:frontend & watcher=$!; trap \"kill $watcher 2>/dev/null || true\" EXIT; bun run dev:backend'"
     }
 }
