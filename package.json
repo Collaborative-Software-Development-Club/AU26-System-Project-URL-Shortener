@@ -3,5 +3,11 @@
     "private": true,
     "workspaces": [
         "packages/*"
-    ]
+    ],
+    "scripts": {
+        "dev:backend": "bun run --cwd packages/backend dev",
+        "build:frontend": "bun run --cwd packages/frontend build",
+        "watch:frontend": "bun run --cwd packages/frontend watch",
+        "dev": "bun run build:frontend; bun run watch:frontend & bun run dev:backend"
+    }
 }
