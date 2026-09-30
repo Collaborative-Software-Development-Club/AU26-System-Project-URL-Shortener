@@ -12,6 +12,7 @@
     "cf-typegen": "wrangler types"
   },
   "dependencies": {
+    "hono": "^4.13.12",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
@@ -25,5 +26,10 @@
     "typescript": "~6.0.2",
     "vite": "^8.3.0",
     "wrangler": "^4.145.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "fsevents@2.3.3": true,
+    "workerd@1.20260930.2": true
   }
 }
