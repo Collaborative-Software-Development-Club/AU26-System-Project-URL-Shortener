@@ -1,6 +1,6 @@
-import { Hono } from "hono";
+import { Hono } from "hono"
 
-const app = new Hono();
+const app = new Hono()
 
 app.get("/api/", (c) => {
   return c.json({
@@ -8,4 +8,4 @@ app.get("/api/", (c) => {
   });
 });
 
-export default app;
+export default app
