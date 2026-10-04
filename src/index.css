@@ -92,6 +92,9 @@ header {
 button {
   cursor: pointer;
 }
+button:not(:disabled):active {
+  opacity: 0.85;
+}
 
 header button {
   padding: 7px 17px;
@@ -100,7 +103,7 @@ header button {
 .log-in-button {
   text-decoration: underline;
 }
-.create-account-button {
+.create-account-btn {
   background-color: var(--accent-bg);
   border: 1px solid var(--accent-border);
 }
@@ -121,18 +124,15 @@ h1 {
   color: var(--text-h);
 }
 
-.url-form {
+.buttons-div {
   display: flex;
   flex-direction: column;
   gap: 15px;
 }
 
-.url-form > * {
-  padding: 15px;
-}
-
 .url-input {
   border: 2px solid var(--accent-border);
+  padding: 15px;
 }
 
 .url-input:focus {
@@ -147,9 +147,19 @@ h1 {
 .url-copy-btn {
   background-color: var(--accent);
   color: var(--bg);
+  padding: 15px;
 }
 
 .url-copy-btn:disabled {
   background-color: var(--accent-bg);
+  color: inherit;
+}
+
+.qr-code-btn {
+  color: var(--accent);
+  padding: 5px;
+}
+
+.qr-code-btn:disabled {
   color: inherit;
 }
