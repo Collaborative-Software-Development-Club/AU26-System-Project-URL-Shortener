@@ -145,10 +145,11 @@ h1 {
 }
 
 .url-copy-btn {
-  background-color: var(--accent-bg);
-}
-
-.url-input:not(:placeholder-shown) + .url-copy-btn {
   background-color: var(--accent);
   color: var(--bg);
+}
+
+.url-copy-btn:disabled {
+  background-color: var(--accent-bg);
+  color: inherit;
 }
