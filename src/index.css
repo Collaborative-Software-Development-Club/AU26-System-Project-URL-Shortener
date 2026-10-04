@@ -1,4 +1,4 @@
-*, *::before, *::after {
+*, *::before, *::after, *::placeholder {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -52,6 +52,10 @@
   }
 }
 
+a {
+  text-decoration: inherit;
+}
+
 #root {
   width: 1126px;
   max-width: 100%;
@@ -96,16 +100,17 @@ button:not(:disabled):active {
   opacity: 0.85;
 }
 
-header button {
+.log-in-button {
+  text-decoration: underline;
   padding: 7px 17px;
   color: var(--accent);
 }
-.log-in-button {
-  text-decoration: underline;
-}
+
 .create-account-btn {
   background-color: var(--accent-bg);
   border: 1px solid var(--accent-border);
+  padding: 7px 17px;
+  color: var(--accent);
 }
 
 main {
@@ -124,40 +129,30 @@ h1 {
   color: var(--text-h);
 }
 
-.buttons-div {
+input {
+  border: 2px solid var(--accent-border);
+  padding: 15px;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+form {
   display: flex;
   flex-direction: column;
   gap: 15px;
 }
 
-.url-input {
-  border: 2px solid var(--accent-border);
+label {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.solid-btn {
   padding: 15px;
-}
-
-.url-input:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-
-::placeholder {
-  color: var(--text);
-}
-
-.url-copy-btn {
-  background-color: var(--accent-bg);
-  padding: 15px;
-}
-
-.url-input:valid ~ .url-copy-btn {
   background-color: var(--accent);
   color: var(--bg);
-}
-
-.qr-code-btn {
-  padding: 5px;
-}
-
-.url-input:valid ~ .qr-code-btn {
-  color: var(--accent);
 }

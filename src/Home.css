@@ -1,0 +1,12 @@
+.url-input:not(:valid) ~ .url-copy-btn {
+  background-color: var(--accent-bg);
+  color: inherit;
+}
+
+.qr-code-btn {
+  padding: 5px;
+}
+
+.url-input:valid ~ .qr-code-btn {
+  color: var(--accent);
+}
