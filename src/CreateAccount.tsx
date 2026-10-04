@@ -2,6 +2,7 @@ export default () => {
   return (
     <main>
       <h1>Create Account</h1>
+      <p>Making an account lets you edit the destination of all the URLs you create!</p>
       <form>
         <label>
           Username

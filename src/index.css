@@ -67,26 +67,19 @@ a {
 header {
   display: flex;
   align-items: center;
-  padding: 15px;
-  gap: 10px;
+  padding: 15px clamp(10px, 2.5vw, 15px);
+  gap: min(10px, 3vw - 15px);
   border-bottom: 1px solid var(--border);
   -webkit-user-select: none;
   user-select: none;
-  @media (max-width: 600px) {
-    gap: 0px;
-    padding: 15px 10px;
-  }
 }
 
 .logo {
   letter-spacing: -1.68px;
   font-family: 'Ribeye', serif;
   color: var(--text-h);
-  font-size: 30px;
+  font-size: clamp(20px, 8px + 3vw, 30px);
   line-height: 1.0;
-  @media (max-width: 600px) {
-    font-size: 24px;
-  }
 }
 
 .flex-space {
@@ -100,16 +93,18 @@ button:not(:disabled):active {
   opacity: 0.85;
 }
 
+.log-in-button, .create-account-btn {
+  padding: 0.5rem clamp(8px, 3px + 2vw, 1.2rem);
+  font-size: clamp(12px, 5px + 2vw, 1rem);
+}
 .log-in-button {
   text-decoration: underline;
-  padding: 7px 17px;
   color: var(--accent);
 }
 
 .create-account-btn {
   background-color: var(--accent-bg);
   border: 1px solid var(--accent-border);
-  padding: 7px 17px;
   color: var(--accent);
 }
 
