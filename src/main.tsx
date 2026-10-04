@@ -1,8 +1,6 @@
-import { StrictMode, useState } from 'react'
+import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-
-
 
 function App() {
 
@@ -17,9 +15,10 @@ function App() {
       <main>
         <h1>URL Shortener</h1>
         <form className="url-form">
-          <input type="text" placeholder="Enter Link" className="url-input" spellCheck="false"></input>
+          <input type="url" placeholder="Enter Link" className="url-input" spellCheck="false" required></input>
           <button className="url-copy-btn">Copy Shortened URL</button>
         </form>
+        {/* Show QR Code */}
       </main>
     </>
   )
