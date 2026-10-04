@@ -10,11 +10,11 @@ export default function App() {
       </header>
       <main>
         <h1>URL Shortener</h1>
-        <div className="buttons-div">
+        <form className="buttons-div">
           <input type="url" placeholder="Enter Link" className="url-input" spellCheck="false" required></input>
-          <button className="url-copy-btn" disabled>Copy Shortened URL</button>
-          <button className="qr-code-btn" disabled>Create QR Code</button>
-        </div>
+          <button className="url-copy-btn">Copy Shortened URL</button>
+          <button className="qr-code-btn">Create QR Code</button>
+        </form>
         {/* Show QR Code */}
       </main>
     </>

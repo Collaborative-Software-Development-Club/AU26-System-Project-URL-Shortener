@@ -145,21 +145,19 @@ h1 {
 }
 
 .url-copy-btn {
-  background-color: var(--accent);
-  color: var(--bg);
+  background-color: var(--accent-bg);
   padding: 15px;
 }
 
-.url-copy-btn:disabled {
-  background-color: var(--accent-bg);
-  color: inherit;
+.url-input:valid ~ .url-copy-btn {
+  background-color: var(--accent);
+  color: var(--bg);
 }
 
 .qr-code-btn {
-  color: var(--accent);
   padding: 5px;
 }
 
-.qr-code-btn:disabled {
-  color: inherit;
+.url-input:valid ~ .qr-code-btn {
+  color: var(--accent);
 }
