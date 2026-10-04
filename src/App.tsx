@@ -15,7 +15,6 @@ export default function App() {
           <button className="url-copy-btn">Copy Shortened URL</button>
           <button className="qr-code-btn">Create QR Code</button>
         </form>
-        {/* Show QR Code */}
       </main>
     </>
   )
