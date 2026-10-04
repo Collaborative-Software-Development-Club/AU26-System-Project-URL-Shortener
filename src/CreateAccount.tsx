@@ -16,5 +16,5 @@ export default () => {
       </form>
       <a href="/">Back to Home</a>
     </main>
-  );
+  )
 }

@@ -1,10 +1,10 @@
-import { StrictMode, useState, useEffect } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import Home from './Home.tsx'
-import Login from './Login.tsx'
-import CreateAccount from './CreateAccount.tsx'
-import NotFound from './NotFound.tsx'
+import { StrictMode, useState, useEffect } from "react"
+import { createRoot } from "react-dom/client"
+import "./index.css"
+import Home from "./Home.tsx"
+import Login from "./Login.tsx"
+import CreateAccount from "./CreateAccount.tsx"
+import NotFound from "./NotFound.tsx"
 
 export const App = () => {
   const [path, setPath] = useState(window.location.pathname)
@@ -37,7 +37,7 @@ export const App = () => {
   })
 
 
-  let page;
+  let page
   switch (path) {
     case "/":
       page = <Home />
@@ -65,7 +65,7 @@ export const App = () => {
   )
 }
 
-createRoot(document.getElementById('root')!).render(
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <App />
   </StrictMode>,

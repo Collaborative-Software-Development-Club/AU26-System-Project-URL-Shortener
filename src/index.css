@@ -13,13 +13,13 @@
 @font-face {
   font-display: swap;
   font-family: 'Ribeye';
-  src: url('/assets/ribeye-v27-latin-regular.woff2') format('woff2');
+  src: url(/assets/ribeye-v27-latin-regular.woff2) format(woff2);
 }
 
 @font-face {
   font-display: swap;
   font-family: 'Nunito';
-  src: url('/assets/nunito-v32-latin-regular.woff2') format('woff2');
+  src: url(/assets/nunito-v32-latin-regular.woff2) format(woff2);
 }
 
 :root {
