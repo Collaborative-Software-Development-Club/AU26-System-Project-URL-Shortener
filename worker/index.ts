@@ -11,6 +11,10 @@ app.post("/api/shorten", async (c) => {
   console.log(linkBody.link);
 
   return c.text("Success", 200);
-})
+});
+
+app.get("/:path", async (c) => {
+  return c.redirect("https://google.com");
+});
 
 export default app
