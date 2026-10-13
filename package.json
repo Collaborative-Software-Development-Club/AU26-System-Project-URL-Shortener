@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite-react-ssg build",
     "lint": "oxlint",
     "preview": "npm run build && vite preview",
     "deploy": "npm run build && wrangler deploy",
@@ -14,7 +14,8 @@
   "dependencies": {
     "hono": "^4.13.12",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "react-router-dom": "^6.30.6"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.62.5",
@@ -25,6 +26,7 @@
     "oxlint": "^1.86.0",
     "typescript": "~6.0.2",
     "vite": "^8.3.2",
+    "vite-react-ssg": "^0.9.2",
     "wrangler": "^4.145.0"
   },
   "allowScripts": {
