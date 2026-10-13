@@ -13,7 +13,8 @@ export default () => {
           value={toShortenLink}
           onChange={e => setToShortenLink(e.target.value)}
         />
-        <button className="url-copy-btn solid-btn" onClick={() => {
+        <button className="url-copy-btn solid-btn" onClick={(e) => {
+          e.preventDefault();
           fetch("/api/shorten", {
             method: "POST",
             headers: {
