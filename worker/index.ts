@@ -12,5 +12,10 @@ app.post("/api/shorten", async (c) => {
 
   return c.text("Success", 200);
 })
+app.get("/", async () => {})
+app.get("/login", async () => {})
+app.get("/create-account", async () => {})
+
+// Check database for URL
 
 export default app

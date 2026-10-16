@@ -2,7 +2,7 @@ export default () => {
   return (
     <main>
       <h1>Page Not Found</h1>
-      <p>Insert situationally-appropriate meme here</p>
+      <p>This URL doesn't exist on our servers.</p>
     </main>
   )
 }
