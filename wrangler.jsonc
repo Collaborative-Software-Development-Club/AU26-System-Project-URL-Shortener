@@ -14,15 +14,12 @@
 		"enabled": true
 	},
 	"upload_source_maps": true,
-	"env": {
-		"prod": {
-			"workers_dev": false,
-			"route": {
-				"pattern": "s.levischoonover.dev",
-				"custom_domain": true
-			}
-		}
+	"workers_dev": false,
+	"route": {
+		"pattern": "s.levischoonover.dev",
+		"custom_domain": true
 	},
+	"preview_urls": true
 	
 	/**
 	 * Smart Placement

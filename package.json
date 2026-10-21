@@ -7,9 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "npm run build && vite preview",
+    "preview:local": "npm run build && vite preview",
+    "preview:cloud": "npm run build && wrangler preview",
     "deploy": "npm run build && wrangler deploy",
-    "deploy:prod": "CLOUDFLARE_ENV=prod npm run build && wrangler deploy",
     "cf-typegen": "wrangler types"
   },
   "dependencies": {
