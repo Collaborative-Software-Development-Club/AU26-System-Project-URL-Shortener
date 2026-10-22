@@ -25,7 +25,7 @@ export const App = () => {
       event.intercept({
         handler() {
           if (document.activeElement instanceof HTMLElement) {
-            document.activeElement.blur() // fix bug where password autocomplete would persist after navigation
+            document.activeElement.blur() // fix bug in Safari where password autocomplete ui would persist after navigation
           }
           const url = new URL(event.destination.url)
           setPath(url.pathname)
