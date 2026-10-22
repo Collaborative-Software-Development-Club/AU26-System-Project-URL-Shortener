@@ -6,6 +6,10 @@ import Login from "./Login.tsx"
 import CreateAccount from "./CreateAccount.tsx"
 import NotFound from "./NotFound.tsx"
 
+const APP_ROOT = "/app"
+
+
+
 export const App = () => {
   const [path, setPath] = useState(window.location.pathname)
 
@@ -39,13 +43,13 @@ export const App = () => {
 
   let page
   switch (path) {
-    case "/":
+    case `${APP_ROOT}/home`:
       page = <Home />
       break
-    case "/login":
+    case `${APP_ROOT}/login`:
       page = <Login />
       break
-    case "/create-account":
+    case `${APP_ROOT}/create-account`:
       page = <CreateAccount />
       break
     default:
@@ -55,10 +59,10 @@ export const App = () => {
   return (
     <>
       <header>
-        <a className="logo" href="/">ShortWork Pro</a>
+        <a className="logo" href={`${APP_ROOT}/home`}>ShortWork Pro</a>
         <div className="flex-space" />
-        <a className="log-in-button" href="/login">Log In</a>
-        <a className="create-account-btn" href="/create-account">Create Account</a>
+        <a className="log-in-button" href={`${APP_ROOT}/login`}>Log In</a>
+        <a className="create-account-btn" href={`${APP_ROOT}/create-account`}>Create Account</a>
       </header>
       {page}
     </>

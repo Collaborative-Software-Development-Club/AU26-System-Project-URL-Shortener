@@ -10,7 +10,7 @@
     "preview:local": "npm run build && vite preview",
     "preview:cloud": "npm run build && wrangler preview",
     "deploy": "npm run build && wrangler deploy",
-    "cf-typegen": "wrangler types"
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
   },
   "dependencies": {
     "hono": "^4.13.13",

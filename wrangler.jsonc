@@ -8,7 +8,15 @@
 	"main": "worker/index.ts",
 	"compatibility_date": "2026-10-14",
 	"assets": {
-		"not_found_handling": "single-page-application"
+		// "directory" should be omitted because the Cloudflare Vite plugin determines this automatically: ./dist/client
+		"not_found_handling": "single-page-application",
+		"binding": "ASSETS",
+		"run_worker_first": [
+			"/*",
+			"!/",
+			"!/app/*",
+			"!/assets/*"
+		]
 	},
 	"observability": {
 		"enabled": true
@@ -19,7 +27,8 @@
 		"pattern": "s.levischoonover.dev",
 		"custom_domain": true
 	},
-	"preview_urls": true
+	"preview_urls": true,
+	"previews": {}
 	
 	/**
 	 * Smart Placement
