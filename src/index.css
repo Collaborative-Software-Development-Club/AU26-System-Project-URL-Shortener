@@ -56,6 +56,10 @@ a {
   text-decoration: inherit;
 }
 
+.link-underline {
+  text-decoration: underline;
+}
+
 #root {
   width: 1126px;
   max-width: 100%;
@@ -89,7 +93,7 @@ header {
 button {
   cursor: pointer;
 }
-button:not(:disabled):active {
+button:active, a:active {
   opacity: 0.85;
 }
 
