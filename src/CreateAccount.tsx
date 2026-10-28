@@ -14,7 +14,7 @@ export default () => {
         </label>
         <button className="solid-btn">Create Account</button>
       </form>
-      <a href="/">Back to Home</a>
+      <a href="/app/home">Back to Home</a>
     </main>
   )
 }

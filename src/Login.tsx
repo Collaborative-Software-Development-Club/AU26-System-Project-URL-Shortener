@@ -13,7 +13,7 @@ export default () => {
         </label>
         <button className="solid-btn">Log In</button>
       </form>
-      <a href="/">Back to Home</a>
+      <a href="/app/home">Back to Home</a>
     </main>
   )
 }
