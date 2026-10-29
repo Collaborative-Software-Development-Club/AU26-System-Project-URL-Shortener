@@ -18,6 +18,13 @@
       "!/assets/*"
     ]
   },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "shortener-production",
+      "database_id": "1d409958-2f36-4e09-ae3e-008d533a0ad0"
+    }
+  ],
   "observability": {
     "enabled": true
   },
@@ -28,7 +35,15 @@
     "custom_domain": true
   },
   "preview_urls": true,
-  "previews": {}
+  "previews": {
+    "d1_databases": [
+      {
+        "binding": "DB",
+        "database_name": "shortener-preview",
+        "database_id": "1e9c7ca6-f873-4d79-a28a-cfe424114283"
+      }
+    ]
+  }
   
   /**
    * Smart Placement
