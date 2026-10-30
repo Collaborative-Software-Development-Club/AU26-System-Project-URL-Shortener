@@ -8,20 +8,45 @@ const app = new Hono<{ Bindings: CloudflareBindings }>()
 //   await next()
 // });
 
+function generateCode() {
+  return Math.random().toString(36).substr(2, 9);
+}
+
 app.post("/api/shorten", async (c) => {
   const linkBody = await c.req.json<{ link: string }>()
   if (!linkBody || !linkBody.link) {
     return c.text("Invalid", 400)
   }
 
-  console.log(linkBody.link)
+  const link = linkBody.link;
+  const code = generateCode();
 
-  return c.text("Success", 200)
+  const result = await c.env.DB
+    .prepare('INSERT INTO links (code, url) VALUES (?, ?)')
+    .bind(code, link)
+    .run();
+
+  return c.json({
+    id: result.meta.last_row_id,
+    code,
+    url: link
+  }, 200);
+
 })
 
 // Check database for URL
-app.get("/1234567890", async (c) => {
-  return c.redirect("https://google.com")
+app.get("/:code", async (c) => {
+  const code = c.req.param("code");
+  const result = await c.env.DB
+    .prepare('SELECT url FROM links WHERE code = ?')
+    .bind(code)
+    .first<{ url: string }>();
+
+  if (!result) {
+    return c.text("Not Found", 404);
+  }
+
+  return c.redirect(result.url);
 })
 
 // Display SPA with not found page otherwise
