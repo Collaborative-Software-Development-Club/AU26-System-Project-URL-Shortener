@@ -7,6 +7,7 @@
   "name": "shortener",
   "main": "worker/index.ts",
   "compatibility_date": "2026-10-14",
+  "account_id": "294df54d6c2a9847124acb8555a12312",
   "assets": {
     // "directory" should be omitted because the Cloudflare Vite plugin determines this automatically: ./dist/client
     "not_found_handling": "single-page-application",
@@ -22,7 +23,8 @@
     {
       "binding": "DB",
       "database_name": "shortener-production",
-      "database_id": "1d409958-2f36-4e09-ae3e-008d533a0ad0"
+      "database_id": "e171323b-3bb5-4f34-9b95-14cc19cad23f",
+      "preview_database_id": "d1e4bf70-f0ae-4e29-bbb4-70fac049661d"
     }
   ],
   "observability": {
@@ -40,7 +42,7 @@
       {
         "binding": "DB",
         "database_name": "shortener-preview",
-        "database_id": "1e9c7ca6-f873-4d79-a28a-cfe424114283"
+        "database_id": "d1e4bf70-f0ae-4e29-bbb4-70fac049661d"
       }
     ]
   }

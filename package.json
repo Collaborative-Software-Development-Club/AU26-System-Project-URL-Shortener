@@ -10,7 +10,10 @@
     "preview:local": "npm run build && vite preview",
     "preview:cloud": "npm run build && wrangler preview",
     "deploy": "npm run build && wrangler deploy",
-    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "reset-database:production": "wrangler d1 time-travel restore shortener-production --bookmark=00000000-00000006-00005116-e8469e068fe2a4a65778aea6dc619d4c && npx wrangler d1 migrations apply DB --remote",
+    "reset-database:preview": "wrangler d1 time-travel restore shortener-preview --bookmark=00000001-00000000-00005116-404a7a5a15d43d590b46e75f3d6a47c9 && npx wrangler d1 migrations apply DB --remote --preview",
+    "reset-database:local": "rm -r .wrangler/state && echo 'Local state successfully deleted.' && npx wrangler d1 migrations apply DB"
   },
   "dependencies": {
     "hono": "^4.13.14",

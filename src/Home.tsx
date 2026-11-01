@@ -2,7 +2,7 @@ import { useState } from "react"
 
 export default () => {
 
-  const [toShortenLink, setToShortenLink] = useState<string>('');
+  const [toShortenLink, setToShortenLink] = useState<string>("")
 
   return (
     <main>
@@ -13,7 +13,7 @@ export default () => {
           onChange={e => setToShortenLink(e.target.value)}
         />
         <button className="url-copy-btn solid-btn" onClick={(e) => {
-          e.preventDefault();
+          e.preventDefault()
           const res = fetch("/api/shorten", {
             method: "POST",
             headers: {
@@ -24,8 +24,8 @@ export default () => {
 
           res.then(response => response.json())
             .then(data => {
-              alert(JSON.stringify(data, null, 2));
-            });
+              alert(JSON.stringify(data, null, 2))
+            })
 
         }}>Copy Shortened URL</button>
         <button className="qr-code-btn">Create QR Code</button>
