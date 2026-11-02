@@ -8,31 +8,58 @@ const app = new Hono<{ Bindings: CloudflareBindings }>()
 //   await next()
 // })
 
-function generateCode() {
-  return Math.random().toString(36).substr(2, 9)
-}
-
+/**
+ * POST /api/shorten — Create a short code for a URL.
+ *
+ * Request: multipart/form-data
+ * - url (string): the URL to shorten
+ *
+ * Response: application/json
+ * - code (string): the identifier used for redirects
+ */
 app.post("/api/shorten", async (c) => {
-  const linkBody = await c.req.json<{ link: string }>()
-  if (!linkBody || !linkBody.link) {
-    return c.text("Invalid", 400)
+  const request = await c.req.parseBody<{ url: string }>()
+
+  let id: number
+  // Insert the URL into the database, and get the ID
+  try {
+    const initialInsert = await c.env.DB
+      .prepare("INSERT INTO links (url) VALUES (?)")
+      .bind(request.url.trim())
+      .run()
+    id = initialInsert.meta.last_row_id
+  } catch (e) {
+    if (!(e instanceof Error)) throw e
+    return c.text(e.message, 500)
   }
 
-  const link = linkBody.link
-  const code = generateCode()
+  // Generate a code where size depends on ID
+  const numberOfCharacters = Math.ceil(Math.log2(id * 1000) / 6)
+    // Math.log2(x) / 6 is effectively log_base_64(x)
+    // The 1000 is the "space factor", where one of 1000 possible codes will be valid
+  const randomBytes = new Uint8Array(Math.ceil(numberOfCharacters * 3/4))
+  let code
+  // Keep trying codes until one works
+  while (true) {
+    // Generate a random code
+    crypto.getRandomValues(randomBytes)
+    code = randomBytes.toBase64({ alphabet: "base64url" }).slice(0, numberOfCharacters)
+    // Try inserting it into database
+    try {
+      await c.env.DB
+        .prepare("UPDATE links SET code = ? WHERE id = ?")
+        .bind(code, id)
+        .run()
+      break
+    } catch (e) {
+      if (!(e instanceof Error)) throw e
+      if (!e.message.includes("SQLITE_CONSTRAINT_UNIQUE")) return c.text(e.message, 500)
+    }
+  }
 
-  const result = await c.env.DB
-    .prepare("INSERT INTO links (code, url) VALUES (?, ?)")
-    .bind(code, link)
-    .run()
-
-  return c.json({
-    id: result.meta.last_row_id,
-    code,
-    url: link
-  }, 200)
-
+  return c.json({ code })
 })
+
 
 // Check database for URL
 app.get("/:code", async (c) => {
