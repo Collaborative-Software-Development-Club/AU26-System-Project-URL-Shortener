@@ -8,18 +8,27 @@ const app = new Hono<{ Bindings: CloudflareBindings }>()
 //   await next()
 // })
 
+
+// In all cases, frontend code is responsible for handling 400, 401, 403, 409 and 500 error codes, which will have no body.
+
 /**
- * POST /api/shorten — Create a short code for a URL.
+ * POST /api/shorten — Create a short code for a URL
  *
  * Request: multipart/form-data
  * - url (string): the URL to shorten
  *
  * Response: application/json
- * - code (string): the identifier used for redirects
+ * { code: string }
  */
 app.post("/api/shorten", async (c) => {
-  const request = await c.req.parseBody<{ url: string }>()
-
+  let request:{ url: string }
+  try {
+    request = await c.req.parseBody()
+    if (!request.url) throw new TypeError
+  } catch (e) {
+    return c.body(null, 400)
+  }
+  
   let id: number
   // Insert the URL into the database, and get the ID
   try {
@@ -29,8 +38,7 @@ app.post("/api/shorten", async (c) => {
       .run()
     id = initialInsert.meta.last_row_id
   } catch (e) {
-    if (!(e instanceof Error)) throw e
-    return c.text(e.message, 500)
+    return c.body(null, 500)
   }
 
   // Generate a code where size depends on ID
@@ -53,7 +61,7 @@ app.post("/api/shorten", async (c) => {
       break
     } catch (e) {
       if (!(e instanceof Error)) throw e
-      if (!e.message.includes("SQLITE_CONSTRAINT_UNIQUE")) return c.text(e.message, 500)
+      if (!e.message.includes("SQLITE_CONSTRAINT_UNIQUE")) return c.body(null, 500)
     }
   }
 
@@ -61,7 +69,87 @@ app.post("/api/shorten", async (c) => {
 })
 
 
-// Check database for URL
+/**
+ * POST /api/login — Log in user, creating a new session
+ *
+ * Request: multipart/form-data
+ * - username (string)
+ * - password (string)
+ *
+ * Response: HTTP 204 (403 would mean incorrect username or password)
+ * 
+ * Set Cookies:
+ * - session: a token that proves the user is logged in
+ *   { username: string, expiration: number, signature: string }
+ */
+app.post("/api/login", async (c) => {
+
+})
+
+
+/**
+ * POST /api/create-account — Create a new user
+ *
+ * Request: multipart/form-data
+ * - username (string)
+ * - password (string)
+ *
+ * Response: HTTP 204 (409 would mean username is taken)
+ * 
+ * Set Cookies:
+ * - session: a token that proves the user is logged in
+ *   { username: string, expiration: number, signature: string }
+ */
+app.post("/api/create-account", async (c) => {
+
+})
+
+
+/**
+ * GET /api/urls — List all URLs that belong to logged-in user
+ * 
+ * Query parameters:
+ * - page
+ *
+ * Response: application/json
+ * { code: string, url: string, description: string | null, create_time: number }[]
+ * - Sorted by create_time, descending
+ * - Will return 50 per page
+ */
+app.get("/api/urls", async (c) => {
+
+})
+
+
+/**
+ * PATCH /api/urls/{code} — Update a URL
+ *
+ * Request: application/json
+ * { description?: string | null, url?: string }
+ *
+ * Response: HTTP 204
+ */
+app.patch("/api/urls", async (c) => {
+
+})
+
+
+/**
+ * DELETE /api/urls/{code} — Delete a URL
+ *
+ * Response: HTTP 204
+ */
+app.delete("/api/urls", async (c) => {
+
+})
+
+
+/**
+ * GET /{code} — Redirect to original URL
+ *
+ * Response: HTTP 302
+ * If URL is not found, will redirect to SPA instead of returning 404
+ */
 app.get("/:code", async (c) => {
   const code = c.req.param("code")
   const result = await c.env.DB
@@ -76,9 +164,11 @@ app.get("/:code", async (c) => {
   return c.redirect(result.url)
 })
 
+
 // Display SPA with not found page otherwise
 app.get("*", async (c) => {
   return c.env.ASSETS.fetch(c.req.raw)
 })
+
 
 export default app

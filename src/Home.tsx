@@ -7,7 +7,7 @@ export default () => {
 
 
   const copyShortenedUrl = async (e:React.SubmitEvent) => {
-    e.preventDefault();
+    e.preventDefault()
 
     setCopyBtnDisabled(true)
     setCopyBtnText("Please wait...")

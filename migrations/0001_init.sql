@@ -12,19 +12,11 @@ CREATE TABLE IF NOT EXISTS links (
   code TEXT UNIQUE, -- There will be a split second when the code is generating and not ready, so NOT NULL didn't work
   url TEXT NOT NULL,
   description TEXT,
+  create_time INTEGER NOT NULL DEFAULT (unixepoch()), -- Unix time in seconds
   owner INTEGER REFERENCES users(id) ON DELETE SET NULL,
   browser_token TEXT -- For not-logged-in users, so if they create an account AFTER creating a url, ownership can be transferred to new account
 ) STRICT;
 CREATE INDEX IF NOT EXISTS idx_links_code ON links(code); -- Fast link lookup by code
 CREATE INDEX IF NOT EXISTS idx_links_owner ON links(owner); -- Fast link lookup by owner (My Links page)
-
-CREATE TABLE IF NOT EXISTS sessions (
-  id INTEGER PRIMARY KEY,
-  user INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  token TEXT NOT NULL, -- UNIQUE not required because tokens are cryptographically guaranteed to be unique
-  expiration INTEGER NOT NULL -- Unix time in seconds
-) STRICT;
-CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token); -- Fast session lookup by token
--- CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user); -- I don't think this is needed unless we have a page that lists all sessions of given user
 
 PRAGMA optimize;
