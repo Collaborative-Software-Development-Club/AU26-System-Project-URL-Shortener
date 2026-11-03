@@ -3,7 +3,7 @@
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY,
   username TEXT NOT NULL UNIQUE,
-  password_hash TEXT NOT NULL
+  password_hash TEXT NOT NULL -- Contains salt
 ) STRICT;
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username); -- Fast user lookup during login
 
