@@ -24,3 +24,16 @@ Client requests username, server returns passwordInformation
 Client performs hash, sends to server
 Server takes sha256 of PBKDF2, checks for match and grants access
 ```
+
+
+### Notes about new code generation algorithm
+
+a space factor of 1024 works but 2048 doesn't because it needs even power of two
+
+a domain of for example three characters is log2(64)*3 = 18 bits
+011101000101000001
+
+using 2048 as space factor (11 bits) takes 11 off that are wasted as random, leaving:
+0111010
+
+This cannot be split evenly
