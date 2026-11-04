@@ -24,7 +24,7 @@ app.post("/api/shorten", async (c) => {
   let request:{ url: string }
   try {
     request = await c.req.parseBody()
-    if (!request.url) throw new TypeError
+    if (typeof request?.url !== "string") throw new TypeError
   } catch (e) {
     return c.body(null, 400)
   }
@@ -70,11 +70,32 @@ app.post("/api/shorten", async (c) => {
 
 
 /**
+ * GET /api/hash-information — Information necessary to guess password as part of login process
+ * 
+ * Query parameters:
+ * - username
+ * 
+ * Response: application/json (or 404 if user does not exist)
+ * {
+ *   salt: base64,  // Random. Usually 128 bits in length
+ *   algorithm: string,  // Usually "SHA-256"
+ *   iterations: number,  // Usually 500000
+ *   length: number  // Usually 256 (bits)
+ * }
+ */
+app.get("/api/hash-information", async (c) => {
+  
+})
+
+
+/**
  * POST /api/login — Log in user, creating a new session
  *
- * Request: multipart/form-data
- * - username (string)
- * - password (string)
+ * Request: application/json
+ * {
+ *   username: string,
+ *   hash: string  // PBKDF2 hash of password
+ * }
  *
  * Response: HTTP 204 (403 would mean incorrect username or password)
  * 
@@ -90,9 +111,17 @@ app.post("/api/login", async (c) => {
 /**
  * POST /api/create-account — Create a new user
  *
- * Request: multipart/form-data
- * - username (string)
- * - password (string)
+ * Request: application/json
+ * {
+ *   username: string,
+ *   hash: base64,  // PBKDF2 hash of password
+ *   hashInfo: {
+ *     salt: base64,  // Random. Usually 128 bits in length
+ *     algorithm: string,  // Usually "SHA-256"
+ *     iterations: number,  // Usually 500000
+ *     length: number  // Usually 256 (bits)
+ *   }
+ * }
  *
  * Response: HTTP 204 (409 would mean username is taken)
  * 
@@ -129,7 +158,7 @@ app.get("/api/urls", async (c) => {
  *
  * Response: HTTP 204
  */
-app.patch("/api/urls", async (c) => {
+app.patch("/api/urls/:code", async (c) => {
 
 })
 
@@ -139,7 +168,7 @@ app.patch("/api/urls", async (c) => {
  *
  * Response: HTTP 204
  */
-app.delete("/api/urls", async (c) => {
+app.delete("/api/urls/:code", async (c) => {
 
 })
 
