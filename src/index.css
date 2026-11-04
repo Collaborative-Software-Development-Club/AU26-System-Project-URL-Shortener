@@ -160,7 +160,7 @@ label {
 Home
 */
 
-.url-input:not(:valid) ~ .url-copy-btn {
+.url-input:not(:valid) ~ .url-copy-btn, .url-copy-btn:disabled {
   background-color: var(--accent-bg);
   color: inherit;
 }

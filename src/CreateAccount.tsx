@@ -18,3 +18,25 @@ export default () => {
     </main>
   )
 }
+
+/*
+
+// Very rough example implementation
+
+const password = "password123!"
+const encoder = new TextEncoder();
+let baseKey
+crypto.subtle.importKey(
+  "raw",
+  encoder.encode(password),
+  "PBKDF2",
+  false,
+  ["deriveBits"]
+).then(key => {
+  baseKey = key;
+}).catch(console.error);
+let bits
+const salt = new Uint8Array(16);
+crypto.getRandomValues(salt);
+crypto.subtle.deriveBits({name:"PBKDF2",hash:"SHA-256",salt,iterations:500000},baseKey5,length=256).then(b=>{bits=b;console.log(new Uint8Array(b))})
+*/
