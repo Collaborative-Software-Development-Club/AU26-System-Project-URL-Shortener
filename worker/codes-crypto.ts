@@ -2,10 +2,10 @@ import { env } from "cloudflare:workers"
 
 const spaceMultiplier = 2**12;
 
-export const encrypt = (id: number): string => {
+export const encode = (id: number): string => {
   return ""
 }
 
-export const decrypt = (code: string): number => {
+export const decode = (code: string): number => {
   return 0
 }

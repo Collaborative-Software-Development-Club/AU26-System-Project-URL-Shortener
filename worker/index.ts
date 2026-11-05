@@ -1,4 +1,5 @@
 import { Hono } from "hono"
+import { encode, decode } from "./codes-crypto.ts";
 
 const app = new Hono<{ Bindings: CloudflareBindings }>()
 
@@ -21,51 +22,20 @@ const app = new Hono<{ Bindings: CloudflareBindings }>()
  * { code: string }
  */
 app.post("/api/shorten", async (c) => {
-  let request:{ url: string }
-  try {
-    request = await c.req.parseBody()
-    if (typeof request?.url !== "string") throw new TypeError
-  } catch (e) {
+  const request = await c.req.parseBody<{ url: string }>();
+  if (!request.url || typeof request.url !== "string") {
     return c.body(null, 400)
   }
-  
-  let id: number
-  // Insert the URL into the database, and get the ID
-  try {
-    const initialInsert = await c.env.DB
+
+  const insertResult = await c.env.DB
       .prepare("INSERT INTO links (url) VALUES (?)")
       .bind(request.url.trim())
       .run()
-    id = initialInsert.meta.last_row_id
-  } catch (e) {
-    return c.body(null, 500)
-  }
 
-  // Generate a code where size depends on ID
-  const numberOfCharacters = Math.ceil(Math.log2(id * 1000) / 6)
-    // Math.log2(x) / 6 is effectively log_base_64(x)
-    // The 1000 is the "space factor", where one of 1000 possible codes will be valid
-  const randomBytes = new Uint8Array(Math.ceil(numberOfCharacters * 3/4))
-  let code
-  // Keep trying codes until one works
-  while (true) {
-    // Generate a random code
-    crypto.getRandomValues(randomBytes)
-    code = randomBytes.toBase64({ alphabet: "base64url" }).slice(0, numberOfCharacters)
-    // Try inserting it into database
-    try {
-      await c.env.DB
-        .prepare("UPDATE links SET code = ? WHERE id = ?")
-        .bind(code, id)
-        .run()
-      break
-    } catch (e) {
-      if (!(e instanceof Error)) throw e
-      if (!e.message.includes("SQLITE_CONSTRAINT_UNIQUE")) return c.body(null, 500)
-    }
-  }
 
-  return c.json({ code })
+  const id = insertResult.meta.last_row_id;
+
+  return c.json({ code: encode(id) })
 })
 
 
@@ -84,7 +54,7 @@ app.post("/api/shorten", async (c) => {
  * }
  */
 app.get("/api/hash-information", async (c) => {
-  
+
 })
 
 
@@ -181,9 +151,10 @@ app.delete("/api/urls/:code", async (c) => {
  */
 app.get("/:code", async (c) => {
   const code = c.req.param("code")
+  const id = decode(code);
   const result = await c.env.DB
-    .prepare("SELECT url FROM links WHERE code = ?")
-    .bind(code)
+    .prepare("SELECT url FROM links WHERE id = ?")
+    .bind(id)
     .first<{ url: string }>()
 
   if (!result) {
