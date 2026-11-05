@@ -31,8 +31,6 @@ app.post("/api/shorten", async (c) => {
       .prepare("INSERT INTO links (url) VALUES (?)")
       .bind(request.url.trim())
       .run()
-
-
   const id = insertResult.meta.last_row_id;
 
   return c.json({ code: encode(id) })
