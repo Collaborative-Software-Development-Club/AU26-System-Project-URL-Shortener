@@ -4,8 +4,6 @@ In all cases, 400 (Bad Request) or 500 (Internal Server Error) may be returned i
 
 > Blockquotes are JSON
 
-No I did not use AI to write this.
-
 <br>
 
 ## Create short code for a URL
