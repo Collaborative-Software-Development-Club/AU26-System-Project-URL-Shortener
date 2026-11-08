@@ -1,5 +1,5 @@
 import { Hono } from "hono"
-import { encode, decode } from "./codes-crypto.ts";
+import { encode, decode, InvalidCodeError } from "./codes-crypto.ts"
 
 const app = new Hono<{ Bindings: CloudflareBindings }>()
 
@@ -11,7 +11,7 @@ const app = new Hono<{ Bindings: CloudflareBindings }>()
 
 
 app.post("/api/shorten", async (c) => {
-  const request = await c.req.parseBody<{ url: string }>();
+  const request = await c.req.parseBody<{ url: string }>()
   if (typeof request?.url !== "string") {
     return c.body(null, 400)
   }
@@ -20,9 +20,9 @@ app.post("/api/shorten", async (c) => {
       .prepare("INSERT INTO links (url) VALUES (?)")
       .bind(request.url.trim())
       .run()
-  const id = insertResult.meta.last_row_id;
+  const id = insertResult.meta.last_row_id
 
-  return c.json({ code: encode(id) })
+  return c.json({ code: await encode(id) })
 })
 
 
@@ -57,24 +57,33 @@ app.delete("/api/urls/:code", async (c) => {
 
 
 app.get("/:code", async (c) => {
-  const code = c.req.param("code")
-  const id = decode(code);
-  const result = await c.env.DB
-    .prepare("SELECT url FROM links WHERE id = ?")
-    .bind(id)
-    .first<{ url: string }>()
+  try {
+    const code = c.req.param("code")
+    const id = await decode(code)
+    const result = await c.env.DB
+      .prepare("SELECT url FROM links WHERE id = ?")
+      .bind(id)
+      .first<{ url: string }>()
 
-  if (!result) {
-    // TODO make this return 404
-    return c.env.ASSETS.fetch(c.req.raw)
+    if (!result) {
+      throw new InvalidCodeError
+    }
+
+    return c.redirect(result.url)
+
+  } catch (e) {
+    if (e instanceof InvalidCodeError) {
+      c.status(404)
+      return c.env.ASSETS.fetch(c.req.raw) 
+    }
+    throw e
   }
-
-  return c.redirect(result.url)
 })
 
 
 // Display SPA with not found page otherwise
 app.get("*", async (c) => {
+  c.status(404)
   return c.env.ASSETS.fetch(c.req.raw)
 })
 

@@ -2,59 +2,87 @@ import { env } from "cloudflare:workers"
 
 // Source https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-38Gr1.2pd.pdf
 
+export class InvalidCodeError extends Error {}
+
 const spaceMultiplier = 1000 // 1 out of every 1000 possible URL's will be active
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 const alphabetBits = Math.log2(alphabet.length)
 const rounds = 10
 
 // Get key from Workers Secrets
-// const env = { ID_ENCODING_KEY: "2ZWnUZnldHpMq4s1bFKv6g==" }
 const keyBytes = Uint8Array.fromBase64(env.ID_ENCODING_KEY)
 const key = await crypto.subtle.importKey("raw", keyBytes, "AES-CBC", false, [ "encrypt" ])
 
 
-const encrypt = async(plaintext: number, domainSize: number): Promise<number> => {
-  const plaintextBytes = new Uint8Array(16)
-  let i = 0;
-  while (plaintext > 0) {
-    plaintextBytes[i++] = plaintext & (2**8 - 1)
-    plaintext >>>= 8
+const numToAlphabet = (num: number, length: number): string => {
+  let str = ""
+  for (let j = 0; j < length; j++) {
+    str = alphabet[num % alphabet.length] + str
+    num = Math.floor(num / alphabet.length)
   }
+  return str
+}
 
-  const ciphertextBuffer = await crypto.subtle.encrypt({ name: "AES-CBC", iv: new Uint8Array(16) }, key, plaintextBytes)
-  const ciphertextBytes = new Uint8Array(ciphertextBuffer)
 
-  let ciphertext = 0
-  for (const byte of ciphertextBytes) {
-    ciphertext = (ciphertext * 2**8 + byte) % domainSize
+const alphabetToNum = (str: string): number => {
+  let num = 0
+  for (const char of str) {
+    num = num * alphabet.length + alphabet.indexOf(char)
   }
-  return ciphertext
+  return num
+}
+
+
+const encrypt = async(otherHalf: number, common: number, round: number, domainSize: number, reverseMultiplier = 1): Promise<number> => {
+  const inBytes = new Uint8Array(16)
+  let index = 0
+  while (common > 0) {
+    inBytes[index++] = common
+    common >>>= 8
+  }
+  inBytes[index] = round
+
+  const buffer = await crypto.subtle.encrypt({ name: "AES-CBC", iv: new Uint8Array(16) }, key, inBytes)
+  const outBytes = new Uint8Array(buffer)
+
+  let derived = 0
+  for (const byte of outBytes) {
+    derived = (derived * 2**8 + byte) % domainSize
+  }
+  return ((otherHalf + derived * reverseMultiplier) % domainSize + domainSize) % domainSize // % twice to avoid negative result
 }
 
 
 export const encode = async (id: number): Promise<string> => {
-  id *= spaceMultiplier
-  const outputLength = Math.ceil(Math.log2(id) / alphabetBits)
+  const plaintext = id * spaceMultiplier
+  const outputLength = Math.ceil(Math.log2(plaintext) / alphabetBits)
   const halfSize = Math.ceil(2**(outputLength * alphabetBits / 2))
-  let a = Math.floor(id / halfSize) // Left half
-  let b = id % halfSize // Right half
+  let a = Math.floor(plaintext / halfSize) // Left half
+  let b = plaintext % halfSize // Right half
 
   // Apply Feistel cipher
   for (let i = 0; i < rounds; i++) {
-    [a, b] = [b, await encrypt(a + i * halfSize, halfSize)]
+    [a, b] = [b, await encrypt(a, b, i, halfSize)]
   }
-  let result = a * halfSize + b
 
-  // Convert to base64
-  let code = ""
-  for (let j = 0; j < outputLength; j++) {
-    code += alphabet[result % alphabet.length]
-    result = Math.floor(result / alphabet.length)
-  }
-  return code
+  return numToAlphabet(a * halfSize + b, outputLength) // Concatenates a and b into base64
 }
 
 
 export const decode = async (code: string): Promise<number> => {
-  return 0
+  const halfSize = Math.ceil(2**(code.length * alphabetBits / 2))
+  const ciphertext = alphabetToNum(code)
+  let a = Math.floor(ciphertext / halfSize)
+  let b = ciphertext % halfSize
+
+  // Apply Feistel cipher, in reverse
+  for (let i = rounds - 1; i >= 0; i--) {
+    [a, b] = [await encrypt(b, a, i, halfSize, -1), a]
+  }
+
+  const plaintext = a * halfSize + b
+  if (plaintext % 1000 !== 0 || plaintext <= 0) {
+    throw new InvalidCodeError
+  }
+  return plaintext / 1000
 }
