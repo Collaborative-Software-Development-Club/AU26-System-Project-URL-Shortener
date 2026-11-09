@@ -17,9 +17,9 @@ app.post("/api/shorten", async (c) => {
   }
 
   const insertResult = await c.env.DB
-      .prepare("INSERT INTO links (url) VALUES (?)")
-      .bind(request.url.trim())
-      .run()
+    .prepare("INSERT INTO links (url) VALUES (?)")
+    .bind(request.url.trim())
+    .run()
   const id = insertResult.meta.last_row_id
 
   return c.json({ code: await encode(id) })
@@ -74,7 +74,7 @@ app.get("/:code", async (c) => {
   } catch (e) {
     if (e instanceof InvalidCodeError) {
       c.status(404)
-      return c.env.ASSETS.fetch(c.req.raw) 
+      return c.env.ASSETS.fetch(c.req.raw)
     }
     throw e
   }
