@@ -26,34 +26,34 @@ app.post("/api/shorten", async (c) => {
 })
 
 
-app.get("/api/hash-information", async (c) => {
+// app.get("/api/hash-information", async (c) => {
 
-})
-
-
-app.post("/api/login", async (c) => {
-
-})
+// })
 
 
-app.post("/api/create-account", async (c) => {
+// app.post("/api/login", async (c) => {
 
-})
-
-
-app.get("/api/urls", async (c) => {
-
-})
+// })
 
 
-app.patch("/api/urls/:code", async (c) => {
+// app.post("/api/create-account", async (c) => {
 
-})
+// })
 
 
-app.delete("/api/urls/:code", async (c) => {
+// app.get("/api/urls", async (c) => {
 
-})
+// })
+
+
+// app.patch("/api/urls/:code", async (c) => {
+
+// })
+
+
+// app.delete("/api/urls/:code", async (c) => {
+
+// })
 
 
 app.get("/:code", async (c) => {
@@ -68,6 +68,25 @@ app.get("/:code", async (c) => {
     if (!result) {
       throw new InvalidCodeError
     }
+
+    c.executionCtx.waitUntil(
+      c.env.DB.prepare("UPDATE links SET clicks = clicks + 1 WHERE id = ?")
+        .bind(id)
+        .run()
+    );
+
+    c.executionCtx.waitUntil(
+      c.env.DB.prepare("INSERT INTO analytics (link_id, ip_address, user_agent, referrer, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?)")
+        .bind(
+          id,
+          c.req.raw.headers.get("CF-Connecting-IP"),
+          c.req.raw.headers.get("User-Agent"),
+          c.req.raw.headers.get("Referer"),
+          c.req.raw.headers.get("CF-latitude") ?? null,
+          c.req.raw.headers.get("CF-longitude") ?? null
+        )
+        .run()
+    )
 
     return c.redirect(result.url)
 

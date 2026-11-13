@@ -12,4 +12,7 @@ CREATE TABLE IF NOT EXISTS analytics (
 CREATE INDEX IF NOT EXISTS idx_analytics_link_id ON analytics(link_id); -- Fast analytics lookup
 CREATE INDEX IF NOT EXISTS idx_analytics_access_time ON analytics(access_time); -- Fast analytics lookup by time
 
+-- add clicks column to links table
+ALTER TABLE links ADD COLUMN clicks INTEGER NOT NULL DEFAULT 0;
+
 pragma optimize;
