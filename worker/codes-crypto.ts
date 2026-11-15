@@ -7,14 +7,14 @@ export class InvalidCodeError extends Error { }
 // If any of these constants change you need to reset the database
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
-const ALPHANET_BITS = Math.log2(ALPHABET.length)
-if (ALPHANET_BITS !== 6) throw new RangeError();
+const ALPHABET_BITS = Math.log2(ALPHABET.length)
+if (ALPHABET_BITS !== 6) throw new RangeError()
 
 const SPACE_MULTIPLIER = 1000 // 1 out of every 1000 possible URL's will be active
-if (SPACE_MULTIPLIER > 2 ** 17 - 1) throw new RangeError // Above this the calculation of a will overflow
+if (SPACE_MULTIPLIER >= 2 ** 17) throw new RangeError // Above this the calculation of a will overflow
 
 const ROUNDS = 8
-if (ROUNDS >= 2 ** 8) throw new RangeError();
+if (ROUNDS >= 2 ** 8) throw new RangeError()
 
 // Get key from Workers Secrets
 const KEY_BYTES = Uint8Array.fromBase64(env.ID_ENCODING_KEY)
@@ -46,7 +46,7 @@ const alphabetToNum = (str: string, domain: number): number[] => {
     // Equivalent to: num = num * alphabet.length + alphabet.indexOf(char)
     // where num = a * domain + b
     const i = ALPHABET.indexOf(char)
-    if (i === -1) throw new InvalidCodeError();
+    if (i === -1) throw new InvalidCodeError()
     b = b * ALPHABET.length + i
     a = a * ALPHABET.length + Math.floor(b / domain)
     b %= domain
@@ -80,14 +80,13 @@ const encrypt = async (otherHalf: number, common: number, round: number, domain:
 
 
 export const encode = async (id: number): Promise<string> => {
-  if (id > Number.MAX_SAFE_INTEGER) throw new RangeError();
+  if (id > Number.MAX_SAFE_INTEGER) throw new RangeError()
 
-  const codeLength = Math.ceil((Math.log2(id) + Math.log2(SPACE_MULTIPLIER)) / ALPHANET_BITS + Number.EPSILON * 1000)
-  const cipherDomain = Math.ceil(2 ** (codeLength * ALPHANET_BITS / 2))
+  const codeLength = Math.ceil((Math.log2(id) + Math.log2(SPACE_MULTIPLIER)) / ALPHABET_BITS + Number.EPSILON * 1000)
+  const cipherDomain = Math.ceil(2 ** (codeLength * ALPHABET_BITS / 2))
   const plaintext = BigInt(id) * BigInt(SPACE_MULTIPLIER)
-  const cipherDomain2 = BigInt(cipherDomain)
-  let a = Number(plaintext / cipherDomain2)
-  let b = Number(plaintext % cipherDomain2)
+  let a = Number(plaintext / BigInt(cipherDomain)) // First half of working value
+  let b = Number(plaintext % BigInt(cipherDomain)) // Second half
 
   // Apply Feistel cipher
   for (let i = 0; i < ROUNDS; i++) {
@@ -99,8 +98,8 @@ export const encode = async (id: number): Promise<string> => {
 
 
 export const decode = async (code: string): Promise<number> => {
-  const cipherDomain = Math.ceil(2 ** (code.length * ALPHANET_BITS / 2))
-  if (cipherDomain > Number.MAX_SAFE_INTEGER / ALPHABET.length) throw new InvalidCodeError();
+  const cipherDomain = Math.ceil(2 ** (code.length * ALPHABET_BITS / 2))
+  if (cipherDomain > Number.MAX_SAFE_INTEGER / ALPHABET.length) throw new InvalidCodeError()
   let [a, b] = alphabetToNum(code, cipherDomain)
 
   // Apply Feistel cipher, in reverse
@@ -108,12 +107,10 @@ export const decode = async (code: string): Promise<number> => {
     [a, b] = [await encrypt(b, a, i, cipherDomain, -1), a]
   }
 
-  // Integer overflow check
-  if (cipherDomain / SPACE_MULTIPLIER * a > Number.MAX_SAFE_INTEGER) throw new InvalidCodeError();
-
   // plaintext = a * cipherDomain + b
-  if ((cipherDomain % SPACE_MULTIPLIER * a + b) % SPACE_MULTIPLIER !== 0) { // Checking that plaintext is multiple of spaceMultiplier
-    throw new InvalidCodeError
-  }
+  if (
+    cipherDomain / SPACE_MULTIPLIER * a > Number.MAX_SAFE_INTEGER // Integer overflow check
+    || (cipherDomain % SPACE_MULTIPLIER * a + b) % SPACE_MULTIPLIER !== 0 // Checking that plaintext is multiple of spaceMultiplier
+  ) throw new InvalidCodeError()
   return a * Math.floor(cipherDomain / SPACE_MULTIPLIER) + Math.floor((cipherDomain % SPACE_MULTIPLIER * a + b) / SPACE_MULTIPLIER) // Equivalent to: plaintext / spaceMultiplier
 }
