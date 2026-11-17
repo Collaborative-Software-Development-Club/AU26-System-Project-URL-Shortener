@@ -97,16 +97,16 @@ button:active, a:active {
   opacity: 0.85;
 }
 
-.log-in-button, .create-account-btn {
+.navbar-item, .navbar-item-solid {
   padding: 0.5rem clamp(8px, 3px + 2vw, 1.2rem);
   font-size: clamp(12px, 5px + 2vw, 1rem);
 }
-.log-in-button {
+.navbar-item {
   text-decoration: underline;
   color: var(--accent);
 }
 
-.create-account-btn {
+.navbar-item-solid {
   background-color: var(--accent-bg);
   border: 1px solid var(--accent-border);
   color: var(--accent);

@@ -8,8 +8,19 @@ import NotFound from "./NotFound.tsx"
 
 
 export const App = () => {
-  const [path, setPath] = useState(window.location.pathname)
 
+  const [loggedIn, setLoggedIn] = useState(false)
+  const [logoutBtnText, setLogoutBtnText] = useState("Log Out")
+  const checkIfLoggedIn = () => setLoggedIn(Boolean(cookieStore.get("logged-in")))
+  const logOut = (e: React.MouseEvent) => {
+    e.preventDefault()
+    setLogoutBtnText("Logging out...")
+
+    
+
+  }
+
+  const [path, setPath] = useState(window.location.pathname)
 
   // Handle link clicks and browser navigation buttons
   useEffect(() => {
@@ -44,10 +55,10 @@ export const App = () => {
       page = <Home />
       break
     case "/app/login":
-      page = <Login />
+      page = <Login onLogin={checkIfLoggedIn} />
       break
     case "/app/create-account":
-      page = <CreateAccount />
+      page = <CreateAccount onLogin={checkIfLoggedIn} />
       break
     default:
       page = <NotFound />
@@ -58,8 +69,15 @@ export const App = () => {
       <header>
         <a className="logo" href="/app/home">ShortWork Pro</a>
         <div className="flex-space" />
-        <a className="log-in-button" href="/app/login">Log In</a>
-        <a className="create-account-btn" href="/app/create-account">Create Account</a>
+        {
+          loggedIn ? <>
+            <a className="navbar-item" href="/app/login">Log In</a>
+            <a className="navbar-item-solid" href="/app/create-account">Create Account</a>
+          </> : <>
+            <a className="navbar-item" href="/app/my-urls">My URLs</a>
+            <a className="navbar-item-solid" onClick={logOut}>{logoutBtnText}</a>
+          </>
+        }
       </header>
       {page}
     </>

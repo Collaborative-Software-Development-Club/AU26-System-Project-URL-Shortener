@@ -1,4 +1,4 @@
-export default () => {
+export default ({ onLogin }: { onLogin?: () => void }) => {
   return (
     <main>
       <h1>Log In</h1>

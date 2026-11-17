@@ -1,30 +1,37 @@
-import { useState } from "react"
+import { useState, type ChangeEvent } from "react"
 
 export default () => {
 
+  const [inputValue, setInputValue] = useState("") // Needed to prevent React from clearing input on submit
   const [copyBtnDisabled, setCopyBtnDisabled] = useState(false)
   const [copyBtnText, setCopyBtnText] = useState("Copy Shortened URL")
 
-
-  const copyShortenedUrl = async (e:React.SubmitEvent) => {
-    e.preventDefault()
+  const copyShortenedUrl = async (formData: FormData) => {
 
     setCopyBtnDisabled(true)
     setCopyBtnText("Please wait...")
+
+    const url = URL.parse(formData.get("url") as string) as URL
+    if (url.hostname === window.location.hostname) {
+      setCopyBtnText("Error: nice try!")
+      return
+    }
 
     let res: Response
     try {
       res = await fetch("/api/shorten", {
         method: "POST",
-        body: new FormData(e.target)
+        body: formData
       })
     } catch (e) {
       setCopyBtnText("Error: could not reach server")
+      setCopyBtnDisabled(false)
       return
     }
 
     if (!res.ok) {
-      setCopyBtnText("Error: internal server error")
+      if (res.status == 429) setCopyBtnText("Error: rate limit hit")
+      else setCopyBtnText("Error: internal server error")
       return
     }
 
@@ -45,7 +52,8 @@ export default () => {
     }
   }
 
-  const removeDisabled = () => {
+  const inputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setInputValue(e.target.value)
     setCopyBtnDisabled(false)
     setCopyBtnText("Copy Shortened URL")
   }
@@ -53,8 +61,8 @@ export default () => {
   return (
     <main>
       <h1>URL Shortener</h1>
-      <form onSubmit={copyShortenedUrl}>
-        <input type="url" name="url" placeholder="Enter Link" className="url-input" spellCheck="false" onChange={removeDisabled} required />
+      <form action={copyShortenedUrl}>
+        <input type="url" name="url" placeholder="Enter Link" className="url-input" spellCheck="false" onChange={inputChange} value={inputValue} required />
         <button className="url-copy-btn solid-btn" disabled={copyBtnDisabled}>{copyBtnText}</button>
         <button className="qr-code-btn">Create QR Code</button> {/* Yes, i know, this button copies the url too for now */}
       </form>

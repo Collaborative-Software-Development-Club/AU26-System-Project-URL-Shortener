@@ -35,9 +35,6 @@ username: string
 > salt: base64\
 > The salt used client-side in the PBKDF2 algorithm. Usually 128 bits in length.
 >
-> algorithm: string\
-> The hashing algorithm used internally for PBKDF2. Usually `SHA-256`.
->
 > iterations: number\
 > Number of iterations for PBKDF2. Usually `500000`
 >
@@ -76,6 +73,9 @@ A token that proves the user is logged in.
 >
 >  signature: base64
 
+logged-in: empty string\
+Expires at the same time as `session`. Not `HTTPOnly`.
+
 **Errors**:
 
 Incorrect username or password: HTTP 403
@@ -99,9 +99,6 @@ POST /api/create-account
 >> salt: base64\
 >> The salt used client-side in the PBKDF2 algorithm. Usually 128 bits in length.
 >>
->> algorithm: string\
->> The hashing algorithm used internally for PBKDF2. Usually `SHA-256`.
->>
 >> iterations: number\
 >> Number of iterations for PBKDF2. Usually `500000`
 >>
@@ -113,7 +110,7 @@ POST /api/create-account
 **Set Cookies**:
 
 session: object\
-A token that proves the user is logged in.
+A token that proves the user is logged in.\
 
 >  username: string
 >
@@ -122,11 +119,25 @@ A token that proves the user is logged in.
 >
 >  signature: base64
 
+logged-in: empty string\
+Expires at the same time as `session`. Not `HTTPOnly`.
+
 **Errors**:
 
 Username taken: HTTP 409
 
 Rate limit hit: HTTP 429, will include `Retry-After` header
+
+<br>
+
+## Log out
+POST /api/logout
+
+**Response**: HTTP 204
+
+**Delete Cookies**:
+- session
+- logged-in
 
 <br>
 

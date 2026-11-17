@@ -1,5 +1,6 @@
 import { Hono } from "hono"
-import { encode, decode, InvalidCodeError } from "./codes-crypto.ts"
+import { encode, decode, InvalidCodeError } from "./short-code-generation.ts"
+import { HTTPException } from "hono/http-exception"
 
 const app = new Hono<{ Bindings: CloudflareBindings }>()
 
@@ -13,7 +14,7 @@ const app = new Hono<{ Bindings: CloudflareBindings }>()
 app.post("/api/shorten", async (c) => {
   const request = await c.req.parseBody<{ url: string }>()
   if (typeof request?.url !== "string") {
-    return c.body(null, 400)
+    throw new HTTPException(400)
   }
 
   const insertResult = await c.env.DB
