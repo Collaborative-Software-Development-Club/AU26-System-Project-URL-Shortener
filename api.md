@@ -11,7 +11,7 @@ POST /api/shorten
 
 **Request Body**: `multipart/form-data`
 
-url: string
+url: string, <1000 characters
 
 **Response Body**: `application/json`
 
@@ -89,7 +89,7 @@ POST /api/create-account
 
 **Request Body**: `application/json`
 
-> username: string
+> username: string, <64 characters
 >
 > hash: base64\
 > PBKDF2 hash of password.

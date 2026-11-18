@@ -30,6 +30,7 @@
   --accent: #aa3bff;
   --accent-bg: rgba(170, 59, 255, 0.1);
   --accent-border: rgba(170, 59, 255, 0.5);
+  --error: #ffa3a9;
 
   font-family: 'Nunito', sans-serif;
   font-weight: 500;
@@ -49,6 +50,7 @@
     --accent: #c084fc;
     --accent-bg: rgba(192, 132, 252, 0.15);
     --accent-border: rgba(170, 59, 255, 0.5);
+    --error: #c44c66;
   }
 }
 
@@ -154,6 +156,49 @@ label {
   padding: 15px;
   background-color: var(--accent);
   color: var(--bg);
+}
+
+/*
+Errors
+*/
+
+@keyframes slide-up {
+  0% {
+    transform: translateY(calc(var(--error-height) + var(--error-margin)));
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.errors {
+  --error-height: 50px;
+  --error-margin: 20px;
+
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: auto;
+  width: 450px;
+  max-width: 90%;
+  display: flex;
+  flex-direction: column-reverse;
+  color: var(--text-h)
+}
+
+.error {
+  background-color: var(--error);
+  width: 100%;
+  height: var(--error-height);
+  border-radius: 5px;
+  margin-bottom: var(--error-margin);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 15px;
+  
+  animation: slide-up 0.2s forwards;
 }
 
 /*

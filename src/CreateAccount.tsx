@@ -1,68 +1,79 @@
-import { useState, type ChangeEvent } from "react"
+import { useState } from "react"
 
-export default ({ onLogin }: { onLogin?: () => void }) => {
+type Props = {
+  onLogin?: () => void,
+  addError: (e: string) => void
+}
 
-  const [username, setUsername] = useState("") // Needed to prevent React from clearing input on submit
-  const [password, setPassword] = useState("") // Needed to prevent React from clearing input on submit
+export default ({ onLogin, addError }: Props) => {
+
   const [btnDisabled, setBtnDisabled] = useState(false)
-  const [btnText, setBtnText] = useState("Create Account")
+  const [formFields, setFormFields] = useState({ username: "", password: "" })
 
   const createAccount = async (formData: FormData) => {
 
-    setBtnText("Please wait...")
-    setBtnDisabled(true)
-    
-    const salt = crypto.getRandomValues(new Uint8Array(16))
-    const iterations = 500000
-    const length = 256
-    const hashBits = await crypto.subtle.deriveBits(
-      { name: "PBKDF2", hash: "SHA-256", salt, iterations },
-      await crypto.subtle.importKey(
-        "raw",
-        new TextEncoder().encode(formData.get("password") as string),
-        "PBKDF2",
-        false,
-        [ "deriveBits" ]
-      ),
-      length
-    )
+    const submitted = {
+      username: formData.get("username") as string,
+      password: formData.get("password") as string
+    }
 
-    let res: Response
     try {
-      res = await fetch("/api/create-account", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: formData.get("username"), // TODO enforce length restriction
-          hash: new Uint8Array(hashBits).toBase64(),
-          hashInfo: { salt: salt.toBase64(), iterations, length }
+
+      if (submitted.username.length >= 64) throw "username too long"
+
+      setBtnDisabled(true)
+      
+      // Generate hash
+      const salt = crypto.getRandomValues(new Uint8Array(16))
+      const iterations = 500000
+      const length = 256
+      const hashBits = await crypto.subtle.deriveBits(
+        { name: "PBKDF2", hash: "SHA-256", salt, iterations },
+        await crypto.subtle.importKey(
+          "raw",
+          new TextEncoder().encode(submitted.password),
+          "PBKDF2",
+          false,
+          [ "deriveBits" ]
+        ),
+        length
+      )
+      const hash = new Uint8Array(hashBits).toBase64()
+
+      let res: Response
+      try {
+        res = await fetch("/api/create-account", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: AbortSignal.timeout(1000),
+          body: JSON.stringify({
+            username: submitted.username,
+            hash,
+            hashInfo: { salt: salt.toBase64(), iterations, length }
+          })
         })
-      })
+      } catch (e) {
+        throw "could not reach server"
+      }
+
+      if (!res.ok) {
+        if (res.status == 409) throw "username already taken"
+        else if (res.status == 429) throw "rate limit hit"
+        else throw "internal server error"
+      }
+
+      onLogin?.()
+
+
     } catch (e) {
-      setBtnText("Error: could not reach server")
-      setBtnDisabled(false)
-      return
+      if (typeof e === "string") {
+        addError(e)
+        setBtnDisabled(false)
+        setFormFields(submitted) // Restore the form fields after React has deleted them
+      } else throw e
     }
-
-    if (!res.ok) {
-      if (res.status == 409) setBtnText("Error: username taken")
-      else if (res.status == 429) setBtnText("Error: rate limit hit")
-      else setBtnText("Error: internal server error")
-      return
-    }
-
-    onLogin?.()
-
   }
 
-  const usernameInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setUsername(e.target.value)
-    setBtnDisabled(false)
-  }
-  const passwordInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setPassword(e.target.value)
-    setBtnDisabled(false)
-  }
 
   return (
     <main>
@@ -71,13 +82,13 @@ export default ({ onLogin }: { onLogin?: () => void }) => {
       <form action={createAccount}>
         <label>
           Username
-          <input type="text" name="username" autoComplete="username" spellCheck="false" onChange={usernameInputChange} value={username} required />
+          <input type="text" name="username" autoComplete="username" spellCheck="false" defaultValue={formFields.username} required />
         </label>
         <label>
           Password
-          <input type="password" name="password" autoComplete="new-password" onChange={passwordInputChange} value={password} required />
+          <input type="password" name="password" autoComplete="new-password" defaultValue={formFields.password} required />
         </label>
-        <button className="solid-btn" disabled={btnDisabled}>{btnText}</button>
+        <button className="solid-btn" disabled={btnDisabled}>Create Account</button>
       </form>
       <a href="/app/home">Back to Home</a>
     </main>
