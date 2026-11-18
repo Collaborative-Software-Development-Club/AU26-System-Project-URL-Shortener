@@ -1,4 +1,9 @@
-export default ({ onLogin }: { onLogin?: () => void }) => {
+type Props = {
+  onLogin?: () => void,
+  addError: (e: string) => void
+}
+
+export default ({ onLogin, addError }: Props) => {
   return (
     <main>
       <h1>Log In</h1>

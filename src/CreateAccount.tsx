@@ -1,4 +1,10 @@
 import { useState } from "react"
+import { useFormStatus } from "react-dom"
+
+const CreateAccountBtn = () => {
+  const { pending } = useFormStatus()
+  return <button className="solid-btn" disabled={pending}>{pending ? "Please wait..." : "Create Account"}</button>
+}
 
 type Props = {
   onLogin?: () => void,
@@ -7,7 +13,6 @@ type Props = {
 
 export default ({ onLogin, addError }: Props) => {
 
-  const [btnDisabled, setBtnDisabled] = useState(false)
   const [formFields, setFormFields] = useState({ username: "", password: "" })
 
   const createAccount = async (formData: FormData) => {
@@ -20,8 +25,6 @@ export default ({ onLogin, addError }: Props) => {
     try {
 
       if (submitted.username.length >= 64) throw "username too long"
-
-      setBtnDisabled(true)
       
       // Generate hash
       const salt = crypto.getRandomValues(new Uint8Array(16))
@@ -66,11 +69,8 @@ export default ({ onLogin, addError }: Props) => {
 
 
     } catch (e) {
-      if (typeof e === "string") {
-        addError(e)
-        setBtnDisabled(false)
-        setFormFields(submitted) // Restore the form fields after React has deleted them
-      } else throw e
+      addError(typeof e === "string" ? e : "unknown error")
+      setFormFields(submitted) // Restore the form fields after React has deleted them
     }
   }
 
@@ -88,7 +88,7 @@ export default ({ onLogin, addError }: Props) => {
           Password
           <input type="password" name="password" autoComplete="new-password" defaultValue={formFields.password} required />
         </label>
-        <button className="solid-btn" disabled={btnDisabled}>Create Account</button>
+        <CreateAccountBtn />
       </form>
       <a href="/app/home">Back to Home</a>
     </main>
