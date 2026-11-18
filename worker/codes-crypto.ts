@@ -17,7 +17,7 @@ const ROUNDS = 8
 if (ROUNDS >= 2 ** 8) throw new RangeError();
 
 // Get key from Workers Secrets
-const KEY_BYTES = Uint8Array.fromBase64(env.ID_ENCODING_KEY)
+const KEY_BYTES = Uint8Array.fromBase64(env.KEY)
 const KEY = await crypto.subtle.importKey("raw", KEY_BYTES, "AES-CBC", false, ["encrypt"])
 
 

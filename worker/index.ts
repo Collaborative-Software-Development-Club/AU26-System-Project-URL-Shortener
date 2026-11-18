@@ -69,24 +69,20 @@ app.get("/:code", async (c) => {
       throw new InvalidCodeError
     }
 
-    c.executionCtx.waitUntil(
-      c.env.DB.prepare("UPDATE links SET clicks = clicks + 1 WHERE id = ?")
-        .bind(id)
-        .run()
-    );
-
-    c.executionCtx.waitUntil(
-      c.env.DB.prepare("INSERT INTO analytics (link_id, ip_address, user_agent, referrer, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?)")
-        .bind(
-          id,
-          c.req.raw.headers.get("CF-Connecting-IP"),
-          c.req.raw.headers.get("User-Agent"),
-          c.req.raw.headers.get("Referer"),
-          c.req.raw.headers.get("CF-latitude") ?? null,
-          c.req.raw.headers.get("CF-longitude") ?? null
-        )
-        .run()
-    )
+    c.env.ANALYTICS.writeDataPoint({
+      "indexes": [String(id)],
+      "blobs": [
+        c.req.header("CF-Connecting-IP") ?? "",
+        c.req.header("User-Agent") ?? "",
+        c.req.header("Referer") ?? "",
+        String(c.req.raw.cf?.country ?? ""),
+        String(c.req.raw.cf?.city ?? "")
+      ],
+      "doubles": [
+        Number(c.req.raw.cf?.latitude ?? 0),
+        Number(c.req.raw.cf?.longitude ?? 0)
+      ]
+    });
 
     return c.redirect(result.url)
 
@@ -99,12 +95,27 @@ app.get("/:code", async (c) => {
   }
 })
 
+app.get("/api/count/:code", async (c) => {
+
+  const code = c.req.param("code")
+  const id = await decode(code)
+
+  const result = await c.env.ANALYTICS_SQL.query<{ count: number }>({
+    query: `SELECT COUNT(*) AS count FROM events.analyticsEngine."${c.env.ANALYTICS_DATASET}" WHERE index1 = $code AND timestamp >= $start`,
+    params: {
+      start: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(), // last 30 days
+      code: id
+    }
+  });
+
+  return c.json({ count: result.data[0].count ?? 0 });
+});
 
 // Display SPA with not found page otherwise
 app.get("*", async (c) => {
   c.status(404)
   return c.env.ASSETS.fetch(c.req.raw)
-})
+});
 
 
 export default app
