@@ -1,6 +1,8 @@
 import { useState } from "react"
 import { useFormStatus } from "react-dom"
 
+import { PBKDF2HashBase64 } from "./auth"
+
 const CreateAccountBtn = () => {
   const { pending } = useFormStatus()
   return <button className="solid-btn" disabled={pending}>{pending ? "Please wait..." : "Create Account"}</button>
@@ -23,25 +25,9 @@ export default ({ onLogin, addError }: Props) => {
     }
 
     try {
-
-      if (submitted.username.length >= 64) throw "username too long"
       
       // Generate hash
       const salt = crypto.getRandomValues(new Uint8Array(16))
-      const iterations = 500000
-      const length = 256
-      const hashBits = await crypto.subtle.deriveBits(
-        { name: "PBKDF2", hash: "SHA-256", salt, iterations },
-        await crypto.subtle.importKey(
-          "raw",
-          new TextEncoder().encode(submitted.password),
-          "PBKDF2",
-          false,
-          [ "deriveBits" ]
-        ),
-        length
-      )
-      const hash = new Uint8Array(hashBits).toBase64()
 
       let res: Response
       try {
@@ -51,8 +37,8 @@ export default ({ onLogin, addError }: Props) => {
           signal: AbortSignal.timeout(1000),
           body: JSON.stringify({
             username: submitted.username,
-            hash,
-            hashInfo: { salt: salt.toBase64(), iterations, length }
+            password: PBKDF2HashBase64(submitted.password, salt, 500000, 256),
+            salt: salt.toBase64()
           })
         })
       } catch (e) {
@@ -62,9 +48,11 @@ export default ({ onLogin, addError }: Props) => {
       if (!res.ok) {
         if (res.status == 409) throw "username already taken"
         else if (res.status == 429) throw "rate limit hit"
-        else throw "internal server error"
+        else if (res.status >= 500) throw "internal server error"
+        else throw "unknown error"
       }
 
+      // Success
       onLogin?.()
 
 
@@ -82,11 +70,27 @@ export default ({ onLogin, addError }: Props) => {
       <form action={createAccount}>
         <label>
           Username
-          <input type="text" name="username" autoComplete="username" spellCheck="false" defaultValue={formFields.username} required />
+          <input
+            type="text"
+            name="username"
+            autoComplete="username"
+            spellCheck="false"
+            defaultValue={formFields.username}
+            maxLength={63}
+            pattern="[\w\-]+"
+            title="Must consist of letters, numbers, underscore, and hyphen."
+            required
+          />
         </label>
         <label>
           Password
-          <input type="password" name="password" autoComplete="new-password" defaultValue={formFields.password} required />
+          <input
+            type="password"
+            name="password"
+            autoComplete="new-password"
+            defaultValue={formFields.password}
+            required
+          />
         </label>
         <CreateAccountBtn />
       </form>

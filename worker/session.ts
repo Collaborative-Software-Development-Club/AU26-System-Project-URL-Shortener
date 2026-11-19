@@ -1,40 +1,71 @@
+// Helper functions related to session management
+
 import { env } from "cloudflare:workers"
-import { HTTPException } from "hono/http-exception"
+import type { Context } from "hono"
+import { deleteCookie, setCookie, setSignedCookie } from "hono/cookie"
 
-const KEY = await crypto.subtle.importKey("raw", Uint8Array.fromBase64(env.KEY), { name: "HMAC", hash: "SHA-256" }, false, [ "sign" ])
-const encoder = new TextEncoder()
-
-export const generateToken = async (username: string, expiration: number): Promise<string> => {
-  const payload = encoder.encode(JSON.stringify({ username, expiration }))
-  const signature = await crypto.subtle.sign("HMAC", KEY, payload)
-  return JSON.stringify({ username, expiration, signature: new Uint8Array(signature).toBase64() })
+export const setSessionCookies = async (c: Context, username: string) => {
+  await setSignedCookie( // This cookie provides proof that the user is logged in.
+    c,
+    "session", // Cookie name
+    JSON.stringify({ // Cookie value
+      username,
+      expiration: Math.floor(Date.now() / 1000) + 2592000 // 30 days expiration
+    }),
+    Uint8Array.fromBase64(c.env.KEY), // Secret for signing
+    { // Cookie options
+      httpOnly: true,
+      secure: true,
+      sameSite: "Strict",
+      maxAge: 31536000, // 1 year (session will expire long before then)
+      prefix: "host"
+    }
+  )
+  await setCookie( // This cookie signals to the client that the user is logged in, as the client cannot access __Host-session
+    c,
+    "logged-in", // Cookie name
+    "", // Cookie value
+    { // Cookie options
+      maxAge: 2588400, // 1 hour before __Host-session, so there is never a situation where client thinks it is not logged in but actually is
+      sameSite: "Strict" 
+    }
+  )
 }
 
-export const isValid = async (token: string): Promise<boolean> => {
-  // Parse session cookie
-  let data
-  try {
-    data = JSON.parse(token)
-  } catch {
-    throw new HTTPException(400)
-  }
-  if (
-    typeof data !== "object"
-    || !("username" in data)
-    || typeof data.username !== "string"
-    || !("expiration" in data)
-    || typeof data.username !== "number"
-    || !("signature" in data)
-    || typeof data.username !== "string"
-  ) throw new HTTPException(400)
+export const clearSessionCookies = async (c: Context) => {
+  deleteCookie(
+    c,
+    "session", // Cookie name
+    { // Cookie options
+      httpOnly: true,
+      secure: true,
+      sameSite: "Strict",
+      maxAge: 31536000, // 1 year (session will expire long before then)
+      prefix: "host"
+    }
+  )
+  deleteCookie(
+    c,
+    "logged-in", // Cookie name
+    { // Cookie options
+      maxAge: 2588400, // 1 hour before __Host-session, so there is never a situation where client thinks it is not logged in but actually is
+      sameSite: "Strict" 
+    }
+  )
+}
 
-  let signature: Uint8Array
-  try {
-    signature = Uint8Array.fromBase64(data.signature)
-  } catch {
-    throw new HTTPException(400)
-  }
-
-  const payload = encoder.encode(JSON.stringify({ username: data.username, expiration: data.expiration }))
-  return await crypto.subtle.verify("HMAC", KEY, signature, payload)
+export const hmacSha256 = async (base64In: string): Promise<Uint8Array> => {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    Uint8Array.fromBase64(env.KEY),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    [ "sign" ]
+  )
+  const hashBits = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    Uint8Array.fromBase64(base64In)
+  )
+  return new Uint8Array(hashBits)
 }

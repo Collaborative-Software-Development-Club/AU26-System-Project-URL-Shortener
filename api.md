@@ -34,12 +34,6 @@ username: string
 
 > salt: base64\
 > The salt used client-side in the PBKDF2 algorithm. Usually 128 bits in length.
->
-> iterations: number\
-> Number of iterations for PBKDF2. Usually `500000`
->
-> length: number\
-> Length of PBKDF2 hash to generate, in bits. Usually `256`.
 
 **Errors**:
 
@@ -56,29 +50,21 @@ POST /api/login
 
 > username: string
 >
-> hash: string\
+> hash: base64\
 > PBKDF2 hash of password
 
 **Response**: HTTP 204
 
 **Set Cookies**:
 
-session: object\
-A token that proves the user is logged in.
-
->  username: string
->
->  expiration: number\
->  Unix time in seconds.
->
->  signature: base64
+__Host-session: A token that proves the user is logged in.
 
 logged-in: empty string\
-Expires at the same time as `session`. Not `HTTPOnly`.
+Expires slightly before `__Host-session`. Not `HTTPOnly`.
 
 **Errors**:
 
-Incorrect username or password: HTTP 403
+Incorrect username or password: HTTP 401
 
 Rate limit hit: HTTP 429, will include `Retry-After` header
 
@@ -94,33 +80,17 @@ POST /api/create-account
 > hash: base64\
 > PBKDF2 hash of password.
 >
-> hashInfo: object
->
->> salt: base64\
->> The salt used client-side in the PBKDF2 algorithm. Usually 128 bits in length.
->>
->> iterations: number\
->> Number of iterations for PBKDF2. Usually `500000`
->>
->> length: number\
->> Length of PBKDF2 hash to generate, in bits. Usually `256`.
+> salt: base64\
+> The salt used client-side in the PBKDF2 algorithm. Usually 128 bits in length.
 
 **Response**: HTTP 204
 
 **Set Cookies**:
 
-session: object\
-A token that proves the user is logged in.\
-
->  username: string
->
->  expiration: number\
->  Unix time in seconds.
->
->  signature: base64
+__Host-session: A token that proves the user is logged in.
 
 logged-in: empty string\
-Expires at the same time as `session`. Not `HTTPOnly`.
+Expires slightly before `__Host-session`. Not `HTTPOnly`.
 
 **Errors**:
 
@@ -136,7 +106,7 @@ POST /api/logout
 **Response**: HTTP 204
 
 **Delete Cookies**:
-- session
+- __Host-session
 - logged-in
 
 <br>
@@ -148,7 +118,7 @@ GET /api/urls
 
 page: optional number
 
-**Authentication**: Valid `session` cookie required
+**Authentication**: Valid session cookie required
 
 **Response**: `application/json`
 
@@ -172,7 +142,7 @@ Invalid or missing session: HTTP 401
 ## Update a URL
 PATCH /api/urls/`code`
 
-**Authentication**: Valid `session` cookie required
+**Authentication**: Valid session cookie required
 
 **Request Body**: `application/json`
 
@@ -197,7 +167,7 @@ URL not found: HTTP 404
 ## Delete a URL
 DELETE /api/urls/`code`
 
-**Authentication**: Valid `session` cookie required
+**Authentication**: Valid session cookie required
 
 **Response**: HTTP 204
 

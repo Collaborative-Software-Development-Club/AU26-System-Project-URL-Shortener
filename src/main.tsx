@@ -1,29 +1,33 @@
 import { StrictMode, useState } from "react"
 import { createRoot } from "react-dom/client"
+import { useFormStatus } from "react-dom"
 
 import "./index.css"
 import Page from "./Page"
 
+const LogoutButton = () => {
+  const { pending } = useFormStatus()
+  return (
+    <button className="navbar-item-solid" disabled={pending}>
+      {pending ? "Please wait..." : "Log Out"}
+    </button>
+  )
+}
+
 
 const App = () => {
 
-  const [loginBtnDisabled, setLoginBtnDisabled] = useState(false)
   const [loggedIn, setLoggedIn] = useState(false)
   const checkIfLoggedIn = async () => setLoggedIn(Boolean(await cookieStore.get("logged-in")))
-  const logOut = (e: React.MouseEvent) => {
-    setLoginBtnDisabled(true)
-    // TODO Continue logging out
-    
-
+  const logOut = async () => {
+    await fetch("/api/logout", { method: "POST" })
+    await checkIfLoggedIn()
   }
 
   // Error handling
-
-  // const [errors, setErrors] = useState<string[]>([])
-  // const addError = (e: string) => setErrors([e, ...errors])
-  const [eCount, setECount] = useState(0)
   const [errors, setErrors] = useState<string[]>([])
-  const addError = (e: string) => {setErrors([e+eCount, ...errors]);setECount(eCount+1)}
+  const addError = (e: string) => setErrors([e, ...errors])
+  // TODO make them disappear after a few seconds
 
 
   return (
@@ -34,7 +38,9 @@ const App = () => {
         {
           loggedIn ? <>
             <a className="navbar-item" href="/app/my-urls">My URLs</a>
-            <button className="navbar-item-solid" onClick={logOut} disabled={loginBtnDisabled}>Log Out</button>
+            <form action={logOut}>
+              <LogoutButton />
+            </form>
           </> : <>
             <a className="navbar-item" href="/app/login">Log In</a>
             <a className="navbar-item-solid" href="/app/create-account">Create Account</a>
@@ -47,8 +53,8 @@ const App = () => {
           <div className="error">
             Error: {e}
             <button onClick={() => setErrors(errors.filter((e2, i2) => i !== i2))}>
-              Delete
-            </button>
+              Clear
+            </button>{/* TODO make this an svg X */}
           </div>
         ))}
       </div>

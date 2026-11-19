@@ -1,3 +1,5 @@
+// Deterministically generate short codes from database ID's
+
 import { env } from "cloudflare:workers"
 
 // Partially based on https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-38Gr1.2pd.pdf

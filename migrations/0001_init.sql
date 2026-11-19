@@ -3,13 +3,13 @@
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY,
   username TEXT NOT NULL UNIQUE,
-  password_hash TEXT NOT NULL, -- SHA-256 hash of PBKDF2 hash supplied by client
-  hash_info TEXT NOT NULL -- { salt, hashAlgorithm, iterations, length }
+  hash BLOB NOT NULL, -- SHA-256 hash of PBKDF2 hash supplied by client
+  salt TEXT NOT NULL -- base64
 ) STRICT;
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username); -- Fast user lookup during login
 
 CREATE TABLE IF NOT EXISTS links (
-  id INTEGER PRIMARY KEY,
+  id INTEGER PRIMARY KEY, -- Code determined from ID and vice versa
   url TEXT NOT NULL,
   description TEXT,
   create_time INTEGER NOT NULL DEFAULT (unixepoch()), -- Unix time in seconds
