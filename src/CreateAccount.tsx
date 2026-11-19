@@ -37,7 +37,7 @@ export default ({ onLogin, addError }: Props) => {
           signal: AbortSignal.timeout(1000),
           body: JSON.stringify({
             username: submitted.username,
-            password: PBKDF2HashBase64(submitted.password, salt, 500000, 256),
+            hash: await PBKDF2HashBase64(submitted.password, salt, 500000, 256),
             salt: salt.toBase64()
           })
         })

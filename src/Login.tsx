@@ -35,6 +35,12 @@ export default ({ onLogin, addError }: Props) => {
       } catch (e) {
         throw "could not reach server"
       }
+      if (!res.ok) {
+        if (res.status == 404) throw "user does not exist"
+        else if (res.status == 429) throw "rate limit hit"
+        else if (res.status >= 500) throw "internal server error"
+        else throw "unknown error"
+      }
       const salt = Uint8Array.fromBase64((await res.json()).salt)
 
       // Log in
@@ -45,15 +51,14 @@ export default ({ onLogin, addError }: Props) => {
           signal: AbortSignal.timeout(1000),
           body: JSON.stringify({
             username: submitted.username,
-            password: PBKDF2HashBase64(submitted.password, salt, 500000, 256)
+            hash: await PBKDF2HashBase64(submitted.password, salt, 500000, 256)
           })
         })
       } catch (e) {
         throw "could not reach server"
       }
-
       if (!res.ok) {
-        if (res.status == 401) throw "incorrect username or password"
+        if (res.status == 401) throw "incorrect password"
         else if (res.status == 429) throw "rate limit hit"
         else if (res.status >= 500) throw "internal server error"
         else throw "unknown error"
