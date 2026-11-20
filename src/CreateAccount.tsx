@@ -31,13 +31,14 @@ export default ({ onLogin, addError }: Props) => {
 
       let res: Response
       try {
+        const hash = await PBKDF2HashBase64(submitted.password, salt, 500000, 256) // Needed seperate variable otherwise timeout would start when hash is being created, before the request is sent
         res = await fetch("/api/create-account", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           signal: AbortSignal.timeout(1000),
           body: JSON.stringify({
             username: submitted.username,
-            hash: await PBKDF2HashBase64(submitted.password, salt, 500000, 256),
+            hash,
             salt: salt.toBase64()
           })
         })

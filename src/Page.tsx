@@ -19,6 +19,7 @@ export default ({ onLogin, addError, loggedIn }: Props) => {
   // Handle link clicks and browser navigation buttons
   useEffect(() => {
     const handleNavigation = (event: NavigateEvent) => {
+      // TODO only intercept /app requests 
       if (!event.canIntercept) return
       if (event.hashChange) return
       if (event.downloadRequest) return

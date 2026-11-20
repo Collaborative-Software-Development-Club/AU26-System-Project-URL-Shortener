@@ -3,7 +3,7 @@ import { useFormStatus } from "react-dom"
 
 import { PBKDF2HashBase64 } from "./auth"
 
-const CreateAccountBtn = () => {
+const LogInBtn = () => {
   const { pending } = useFormStatus()
   return <button className="solid-btn" disabled={pending}>{pending ? "Please wait..." : "Log In"}</button>
 }
@@ -45,13 +45,14 @@ export default ({ onLogin, addError }: Props) => {
 
       // Log in
       try {
+        const hash = await PBKDF2HashBase64(submitted.password, salt, 500000, 256) // Needed seperate variable otherwise timeout would start when hash is being created, before the request is sent
         res = await fetch("/api/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           signal: AbortSignal.timeout(1000),
           body: JSON.stringify({
             username: submitted.username,
-            hash: await PBKDF2HashBase64(submitted.password, salt, 500000, 256)
+            hash
           })
         })
       } catch (e) {
@@ -104,7 +105,7 @@ export default ({ onLogin, addError }: Props) => {
             required
           />
         </label>
-        <button className="solid-btn">Log In</button>
+        <LogInBtn />
       </form>
       <a href="/app/home">Back to Home</a>
     </main>

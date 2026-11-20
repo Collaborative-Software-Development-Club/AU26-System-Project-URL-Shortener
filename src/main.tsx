@@ -17,17 +17,21 @@ const LogoutButton = () => {
 
 const App = () => {
 
+  // Logged-in state
   const [loggedIn, setLoggedIn] = useState(false)
   const checkIfLoggedIn = async () => setLoggedIn(Boolean(await cookieStore.get("logged-in")))
+  checkIfLoggedIn()
   const logOut = async () => {
     await fetch("/api/logout", { method: "POST" })
+    // TODO add logout error page if connection failed, or simply didn't remove cookies
     await checkIfLoggedIn()
   }
 
   // Error handling
   const [errors, setErrors] = useState<string[]>([])
-  const addError = (e: string) => setErrors([e, ...errors])
+  const addError = (e: string) => setErrors([e, ...errors]) // TODO
   // TODO make them disappear after a few seconds
+  // TODO make errors specific to each page
 
 
   return (
@@ -52,7 +56,7 @@ const App = () => {
         {errors.map((e, i) => (
           <div className="error">
             Error: {e}
-            <button onClick={() => setErrors(errors.filter((e2, i2) => i !== i2))}>
+            <button onClick={() => setErrors(errors.filter((_, i2) => i !== i2))}>
               Clear
             </button>{/* TODO make this an svg X */}
           </div>

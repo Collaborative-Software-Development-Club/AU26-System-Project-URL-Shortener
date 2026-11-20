@@ -47,10 +47,12 @@ export default ({ addError }: Props) => {
       }
 
       try {
-        await navigator.clipboard.writeText(window.location.host + "/" + data.code)
+        await navigator.clipboard.writeText(window.location.origin + "/" + data.code)
         setSuccessState(true)
       } catch (e) {
         throw "Error copying URL"
+        // TODO in case an error happens, store the server response so we don't duplicate requests
+        // Or server side we could check for duplicates
       }
 
     } catch (e) {
