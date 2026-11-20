@@ -1,4 +1,4 @@
-import { Hono } from "hono"
+import { Context, Hono } from "hono"
 import { HTTPException } from "hono/http-exception"
 
 import { encode, decode, InvalidCodeError } from "./short-code-generation.ts"
@@ -14,10 +14,10 @@ const app = new Hono<{ Bindings: CloudflareBindings }>()
 
 
 app.post("/api/shorten", async (c) => {
-  const request = await c.req.parseBody()
-  if (typeof request?.url !== "string") {
-    throw new HTTPException(400)
-  }
+  let request
+  try { request = await c.req.parseBody() }
+  catch (e) { throw new HTTPException(400) }
+  if (typeof request.url !== "string" || request.url.length >= 1000) throw new HTTPException(400)
 
   const insertResult = await c.env.DB
     .prepare("INSERT INTO links (url) VALUES (?)")
@@ -38,9 +38,7 @@ app.get("/api/hash-information", async (c) => {
     .prepare("SELECT salt FROM users WHERE username = ?")
     .bind(username)
     .first<{ salt: string }>()
-  if (dbResponse === null) {
-    throw new HTTPException(404)
-  }
+  if (dbResponse === null) throw new HTTPException(404)
 
   return c.json({ salt: dbResponse.salt })
 
@@ -48,7 +46,10 @@ app.get("/api/hash-information", async (c) => {
 
 
 app.post("/api/login", async (c) => {
-  const request = await c.req.json<unknown>()
+  // Process user input
+  let request
+  try { request = await c.req.json<unknown>() }
+  catch (e) { throw new HTTPException(400) }
   if (
     // Verify request according to API
     typeof request !== "object"
@@ -66,13 +67,10 @@ app.post("/api/login", async (c) => {
     .prepare("SELECT hash FROM users WHERE username = ?")
     .bind(request.username)
     .first<{ hash: Uint8Array }>()
-  if (dbResponse === null) {
-    throw new HTTPException(401)
-  }
+  if (dbResponse === null) throw new HTTPException(401)
 
   // Generate hash from user input
   const userHash = await hmacSha256(request.hash)
-  if (userHash.byteLength !== 32) throw new HTTPException(400)
 
   // Check equality
   for (let i = 0; i < userHash.length; i++) {
@@ -81,12 +79,15 @@ app.post("/api/login", async (c) => {
 
   // Authentication granted
   await setSessionCookies(c, request.username)
-  return c.body(null, 200)
+  return c.body(null, 204)
 })
 
 
 app.post("/api/create-account", async (c) => {
-  const request = await c.req.json<unknown>()
+  // Process user input
+  let request
+  try { request = await c.req.json<unknown>() }
+  catch (e) { throw new HTTPException(400) }
   if (
     // Verify request according to API
     typeof request !== "object"
@@ -101,6 +102,8 @@ app.post("/api/create-account", async (c) => {
     || typeof request.salt !== "string"
     || request.salt.length >= 64
   ) throw new HTTPException(400)
+  try { Uint8Array.fromBase64(request.salt) }
+  catch (e) { throw new HTTPException(400) }
 
   try {
     await c.env.DB
@@ -114,7 +117,7 @@ app.post("/api/create-account", async (c) => {
 
   // Success
   await setSessionCookies(c, request.username)
-  return c.body(null, 201)
+  return c.body(null, 204)
 })
 
 
@@ -143,22 +146,17 @@ app.get("/:code", async (c) => {
   try {
     const code = c.req.param("code")
     const id = await decode(code)
+
     const result = await c.env.DB
       .prepare("SELECT url FROM links WHERE id = ?")
       .bind(id)
       .first<{ url: string }>()
-
-    if (!result) {
-      throw new InvalidCodeError
-    }
+    if (!result) throw new InvalidCodeError
 
     return c.redirect(result.url)
 
   } catch (e) {
-    if (e instanceof InvalidCodeError) {
-      c.status(404)
-      return c.env.ASSETS.fetch(c.req.raw)
-    }
+    if (e instanceof InvalidCodeError) return response404(c)
     throw e
   }
 })
@@ -166,9 +164,17 @@ app.get("/:code", async (c) => {
 
 // Display SPA with not found page otherwise
 app.get("*", async (c) => {
-  c.status(404)
-  return c.env.ASSETS.fetch(c.req.raw)
+  const response = await c.env.ASSETS.fetch(c.req.raw)
+  return response404(c)
 })
+
+const response404 = async (c: Context) => {
+  const assetResponse = await c.env.ASSETS.fetch(new URL("/", c.req.url))
+  return new Response(assetResponse.body, {
+    status: 404,
+    headers: assetResponse.headers
+  })
+}
 
 
 export default app

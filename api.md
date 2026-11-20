@@ -50,7 +50,7 @@ POST /api/login
 
 > username: string
 >
-> hash: base64\
+> hash: base64, 256 bits\
 > PBKDF2 hash of password
 
 **Response**: HTTP 204
@@ -77,10 +77,10 @@ POST /api/create-account
 
 > username: string, <64 characters
 >
-> hash: base64\
+> hash: base64, 256 bits\
 > PBKDF2 hash of password.
 >
-> salt: base64\
+> salt: base64, <64 characters\
 > The salt used client-side in the PBKDF2 algorithm. Usually 128 bits in length.
 
 **Response**: HTTP 204

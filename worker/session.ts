@@ -3,6 +3,7 @@
 import { env } from "cloudflare:workers"
 import type { Context } from "hono"
 import { deleteCookie, setCookie, setSignedCookie } from "hono/cookie"
+import { HTTPException } from "hono/http-exception"
 
 export const setSessionCookies = async (c: Context, username: string) => {
   await setSignedCookie( // This cookie provides proof that the user is logged in.
@@ -21,7 +22,7 @@ export const setSessionCookies = async (c: Context, username: string) => {
       prefix: "host"
     }
   )
-  await setCookie( // This cookie signals to the client that the user is logged in, as the client cannot access __Host-session
+  setCookie( // This cookie signals to the client that the user is logged in, as the client cannot access __Host-session
     c,
     "logged-in", // Cookie name
     "", // Cookie value
@@ -54,18 +55,28 @@ export const clearSessionCookies = async (c: Context) => {
   )
 }
 
+    
+const key = await crypto.subtle.importKey(
+  "raw",
+  Uint8Array.fromBase64(env.KEY),
+  { name: "HMAC", hash: "SHA-256" },
+  false,
+  [ "sign" ]
+)
+
+// Base64In must be valid base64
 export const hmacSha256 = async (base64In: string): Promise<Uint8Array> => {
-  const key = await crypto.subtle.importKey(
-    "raw",
-    Uint8Array.fromBase64(env.KEY),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    [ "sign" ]
-  )
+  // Process user input
+  let hashIn
+  try { hashIn = Uint8Array.fromBase64(base64In) }
+  catch (e) { throw new HTTPException(400) }
+  if (hashIn.byteLength !== 32) throw new HTTPException(400)
+
+  // Create HMAC-SHA256 hash
   const hashBits = await crypto.subtle.sign(
     "HMAC",
     key,
-    Uint8Array.fromBase64(base64In)
+    hashIn
   )
   return new Uint8Array(hashBits)
 }
