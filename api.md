@@ -11,7 +11,7 @@ POST /api/shorten
 
 **Request Body**: `multipart/form-data`
 
-url: string
+url: string, <1000 characters
 
 **Response Body**: `application/json`
 
@@ -34,15 +34,6 @@ username: string
 
 > salt: base64\
 > The salt used client-side in the PBKDF2 algorithm. Usually 128 bits in length.
->
-> algorithm: string\
-> The hashing algorithm used internally for PBKDF2. Usually `SHA-256`.
->
-> iterations: number\
-> Number of iterations for PBKDF2. Usually `500000`
->
-> length: number\
-> Length of PBKDF2 hash to generate, in bits. Usually `256`.
 
 **Errors**:
 
@@ -59,26 +50,21 @@ POST /api/login
 
 > username: string
 >
-> hash: string\
+> hash: base64, 256 bits\
 > PBKDF2 hash of password
 
 **Response**: HTTP 204
 
 **Set Cookies**:
 
-session: object\
-A token that proves the user is logged in.
+__Host-session: A token that proves the user is logged in.
 
->  username: string
->
->  expiration: number\
->  Unix time in seconds.
->
->  signature: base64
+logged-in: empty string\
+Expires slightly before `__Host-session`. Not `HTTPOnly`.
 
 **Errors**:
 
-Incorrect username or password: HTTP 403
+Incorrect username or password: HTTP 401
 
 Rate limit hit: HTTP 429, will include `Retry-After` header
 
@@ -89,44 +75,39 @@ POST /api/create-account
 
 **Request Body**: `application/json`
 
-> username: string
+> username: string, <64 characters
 >
-> hash: base64\
+> hash: base64, 256 bits\
 > PBKDF2 hash of password.
 >
-> hashInfo: object
->
->> salt: base64\
->> The salt used client-side in the PBKDF2 algorithm. Usually 128 bits in length.
->>
->> algorithm: string\
->> The hashing algorithm used internally for PBKDF2. Usually `SHA-256`.
->>
->> iterations: number\
->> Number of iterations for PBKDF2. Usually `500000`
->>
->> length: number\
->> Length of PBKDF2 hash to generate, in bits. Usually `256`.
+> salt: base64, <64 characters\
+> The salt used client-side in the PBKDF2 algorithm. Usually 128 bits in length.
 
 **Response**: HTTP 204
 
 **Set Cookies**:
 
-session: object\
-A token that proves the user is logged in.
+__Host-session: A token that proves the user is logged in.
 
->  username: string
->
->  expiration: number\
->  Unix time in seconds.
->
->  signature: base64
+logged-in: empty string\
+Expires slightly before `__Host-session`. Not `HTTPOnly`.
 
 **Errors**:
 
 Username taken: HTTP 409
 
 Rate limit hit: HTTP 429, will include `Retry-After` header
+
+<br>
+
+## Log out
+POST /api/logout
+
+**Response**: HTTP 204
+
+**Delete Cookies**:
+- __Host-session
+- logged-in
 
 <br>
 
@@ -137,7 +118,7 @@ GET /api/urls
 
 page: optional number
 
-**Authentication**: Valid `session` cookie required
+**Authentication**: Valid session cookie required
 
 **Response**: `application/json`
 
@@ -161,7 +142,7 @@ Invalid or missing session: HTTP 401
 ## Update a URL
 PATCH /api/urls/`code`
 
-**Authentication**: Valid `session` cookie required
+**Authentication**: Valid session cookie required
 
 **Request Body**: `application/json`
 
@@ -186,7 +167,7 @@ URL not found: HTTP 404
 ## Delete a URL
 DELETE /api/urls/`code`
 
-**Authentication**: Valid `session` cookie required
+**Authentication**: Valid session cookie required
 
 **Response**: HTTP 204
 
