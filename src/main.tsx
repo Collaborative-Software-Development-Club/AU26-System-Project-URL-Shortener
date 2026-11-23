@@ -1,67 +1,65 @@
-import { StrictMode, useState, useEffect } from "react"
+import { StrictMode, useState } from "react"
 import { createRoot } from "react-dom/client"
+import { useFormStatus } from "react-dom"
+
 import "./index.css"
-import Home from "./Home.tsx"
-import Login from "./Login.tsx"
-import CreateAccount from "./CreateAccount.tsx"
-import NotFound from "./NotFound.tsx"
+import Page from "./Page"
+
+const LogoutButton = () => {
+  const { pending } = useFormStatus()
+  return (
+    <button className="navbar-item-solid" disabled={pending}>
+      {pending ? "Please wait..." : "Log Out"}
+    </button>
+  )
+}
 
 
-export const App = () => {
-  const [path, setPath] = useState(window.location.pathname)
+export default function App() {
 
-
-  // Handle link clicks and browser navigation buttons
-  useEffect(() => {
-
-    const handleNavigation = (event: NavigateEvent) => {
-      if (!event.canIntercept) return
-      if (event.hashChange) return
-      if (event.downloadRequest) return
-
-      event.intercept({
-        handler() {
-          if (document.activeElement instanceof HTMLElement) {
-            document.activeElement.blur() // fix bug in Safari where password autocomplete ui would persist after navigation
-          }
-          const url = new URL(event.destination.url)
-          setPath(url.pathname)
-        }
-      })
-
-    }
-
-    navigation.addEventListener("navigate", handleNavigation)
-    return () => {
-      navigation.removeEventListener("navigate", handleNavigation)
-    }
-  })
-
-
-  let page
-  switch (path) {
-    case "/app/home":
-      page = <Home />
-      break
-    case "/app/login":
-      page = <Login />
-      break
-    case "/app/create-account":
-      page = <CreateAccount />
-      break
-    default:
-      page = <NotFound />
+  // Logged-in state management
+  const [loggedIn, setLoggedIn] = useState< boolean | null >(null)
+  const checkIfLoggedIn = async (): Promise<boolean> => {
+    const l = Boolean(await cookieStore.get("logged-in"))
+    setLoggedIn(l)
+    return l
   }
+  if (loggedIn === null) {
+    checkIfLoggedIn()
+    return
+  }
+
+  const logOut = async () => {
+    try {
+      await fetch("/api/logout", {
+        method: "POST",
+        signal: AbortSignal.timeout(2000)
+      })
+    } catch (e) {}
+    // If logout somehow failed, display error page
+    // Else, go home
+    window.location.href = await checkIfLoggedIn() ? "/app/error?e=Could%20not%20connect%20to%20server." : "/app/home"
+  }
+
 
   return (
     <>
       <header>
         <a className="logo" href="/app/home">ShortWork Pro</a>
         <div className="flex-space" />
-        <a className="log-in-button" href="/app/login">Log In</a>
-        <a className="create-account-btn" href="/app/create-account">Create Account</a>
+        {
+          loggedIn ? <>
+            <a className="navbar-item" href="/app/my-urls">My URLs</a>
+            <form action={logOut}>
+              <LogoutButton />
+            </form>
+          </> : <>
+            <a className="navbar-item" href="/app/login">Log In</a>
+            <a className="navbar-item-solid" href="/app/create-account">Create Account</a>
+          </>
+        }
       </header>
-      {page}
+      <Page onLogin={checkIfLoggedIn} loggedIn={loggedIn} />
     </>
   )
 }

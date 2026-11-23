@@ -2,6 +2,8 @@
 
 [API documentation](api.md)
 
+[Backend API test suite](tests/README.md): run `npm run test:api -- <port>` against a running local instance.
+
 ## Style guidelines
 
 - Double quotes only!
