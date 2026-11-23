@@ -5,7 +5,7 @@ import { clearSessionCookies, hmacSha256, setSessionCookies } from "../session.t
 
 const auth = new Hono<Env>();
 
-auth.get("/api/hash-information", async (c) => {
+auth.get("/hash-information", async (c) => {
   const username = c.req.query("username")
   if (username === undefined) throw new HTTPException(400)
   
@@ -20,7 +20,7 @@ auth.get("/api/hash-information", async (c) => {
 })
 
 
-auth.post("/api/login", async (c) => {
+auth.post("/login", async (c) => {
   // Process user input
   let request
   try { request = await c.req.json<unknown>() }
@@ -58,7 +58,7 @@ auth.post("/api/login", async (c) => {
 })
 
 
-auth.post("/api/create-account", async (c) => {
+auth.post("/create-account", async (c) => {
   // Process user input
   let request
   try { request = await c.req.json<unknown>() }
@@ -96,7 +96,7 @@ auth.post("/api/create-account", async (c) => {
 })
 
 
-auth.post("/api/logout", async (c) => {
+auth.post("/logout", async (c) => {
   clearSessionCookies(c)
   return c.body(null, 204)
 })

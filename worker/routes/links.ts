@@ -5,7 +5,7 @@ import { decode, encode } from "../short-code-generation.ts";
 
 const links = new Hono<Env>();
 
-links.post("/api/shorten", async (c) => {
+links.post("/shorten", async (c) => {
   let request
   try { request = await c.req.parseBody() }
   catch (e) { throw new HTTPException(400) }
@@ -20,7 +20,7 @@ links.post("/api/shorten", async (c) => {
   return c.json({ code: await encode(id) })
 })
 
-links.get("/api/count/:code", async (c) => {
+links.get("/count/:code", async (c) => {
 
   const code = c.req.param("code")
   const id = await decode(code)
