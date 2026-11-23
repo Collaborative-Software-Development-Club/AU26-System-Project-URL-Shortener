@@ -1,14 +1,14 @@
 import { Hono } from "hono"
 import type { Env } from "../types.ts"
 import { HTTPException } from "hono/http-exception";
-import { clearSessionCookies, hmacSha256, setSessionCookies } from "../session.ts";
+import { clearSessionCookies, hmacSha256, key, setSessionCookies } from "../session.ts";
 
 const auth = new Hono<Env>();
 
 auth.get("/hash-information", async (c) => {
   const username = c.req.query("username")
   if (username === undefined) throw new HTTPException(400)
-  
+
   // Get salt from database
   const dbResponse = await c.env.DB
     .prepare("SELECT salt FROM users WHERE username = ?")
@@ -44,13 +44,23 @@ auth.post("/login", async (c) => {
     .first<{ hash: Uint8Array }>()
   if (dbResponse === null) throw new HTTPException(401)
 
-  // Generate hash from user input
-  const userHash = await hmacSha256(request.hash)
+  let hashBytes
+  try {
+    hashBytes = Uint8Array.fromBase64(request.hash)
+  } catch {
+    throw new HTTPException(400)
+  }
+  if (hashBytes.byteLength !== 32) throw new HTTPException(400)
 
   // Check equality
-  for (let i = 0; i < userHash.length; i++) {
-    if (userHash[i] !== dbResponse.hash[i]) throw new HTTPException(401)
-  }
+  const valid = await crypto.subtle.verify(
+    "HMAC",
+    key,
+    dbResponse.hash,
+    Uint8Array.fromBase64(request.hash)
+  );
+
+  if (!valid) throw new HTTPException(401);
 
   // Authentication granted
   await setSessionCookies(c, request.username)

@@ -58,12 +58,12 @@ export const clearSessionCookies = async (c: Context) => {
 }
 
 
-const key = await crypto.subtle.importKey(
+export const key = await crypto.subtle.importKey(
   "raw",
   Uint8Array.fromBase64(env.KEY),
   { name: "HMAC", hash: "SHA-256" },
   false,
-  ["sign"]
+  ["sign", "verify"]
 )
 
 // Base64In must be valid base64
