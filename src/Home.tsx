@@ -1,61 +1,66 @@
 import { useState } from "react"
+import { useFormStatus } from "react-dom"
 
-export default () => {
+const CopyButton = ({ isSuccessState }: { isSuccessState: boolean }) => {
+  const { pending } = useFormStatus()
+  return (
+    <button className="url-copy-btn solid-btn" disabled={pending || isSuccessState}>
+      {pending ? "Please wait..." : isSuccessState ? "URL Copied!" : "Copy Shortened URL"}
+    </button>
+  )
+}
 
-  const [copyBtnDisabled, setCopyBtnDisabled] = useState(false)
-  const [copyBtnText, setCopyBtnText] = useState("Copy Shortened URL")
+export default function Home() {
 
+  const [isSuccessState, setSuccessState] = useState(false)
+  const [urlField, setUrlField] = useState("")
+  const [errorMessage, setError] = useState("")
 
-  const copyShortenedUrl = async (e:React.SubmitEvent) => {
-    e.preventDefault()
-
-    setCopyBtnDisabled(true)
-    setCopyBtnText("Please wait...")
-
-    let res: Response
-    try {
-      res = await fetch("/api/shorten", {
-        method: "POST",
-        body: new FormData(e.target)
-      })
-    } catch (e) {
-      setCopyBtnText("Error: could not reach server")
-      return
-    }
-
-    if (!res.ok) {
-      setCopyBtnText("Error: internal server error")
-      return
-    }
-
-    let data: { code: string }
-    try {
-      data = await res.json()
-    } catch (e) {
-      setCopyBtnText("Error: invalid server response")
-      return
-    }
+  const copyShortenedUrl = async (formData: FormData) => {
+    const submitted = formData.get("url") as string
 
     try {
-      await navigator.clipboard.writeText(window.location.host + "/" + data.code)
-      setCopyBtnText("URL Copied!")
-    } catch (e) {
-      setCopyBtnText("Error copying URL")
-      return
-    }
-  }
 
-  const removeDisabled = () => {
-    setCopyBtnDisabled(false)
-    setCopyBtnText("Copy Shortened URL")
+      const url = URL.parse(submitted) as URL
+      if (url.origin === window.location.origin) throw "nice try!"
+
+      let res: Response
+      try {
+        res = await fetch("/api/shorten", {
+          method: "POST",
+          body: formData
+        })
+      } catch (e) {
+        throw "could not reach server"
+      }
+
+      if (!res.ok) throw res.status == 429 ? "rate limit hit" : "internal server error"
+
+      const data = await res.json()
+
+      try {
+        await navigator.clipboard.writeText(window.location.origin + "/" + data.code)
+        setSuccessState(true)
+      } catch (e) {
+        throw "could not copy URL to clipboard"
+        // TODO in case an error happens, store the server response so we don't duplicate requests
+        // Or server side we could check for duplicates
+      }
+
+    } catch (e) {
+      setError(typeof e === "string" ? e : "unknown error")
+    }
+
+    setUrlField(submitted) // Restore the form fields after React has deleted them
   }
 
   return (
     <main>
       <h1>URL Shortener</h1>
-      <form onSubmit={copyShortenedUrl}>
-        <input type="url" name="url" placeholder="Enter Link" className="url-input" spellCheck="false" onChange={removeDisabled} required />
-        <button className="url-copy-btn solid-btn" disabled={copyBtnDisabled}>{copyBtnText}</button>
+      <form action={copyShortenedUrl}>
+        <input type="url" name="url" placeholder="Enter Link" className="url-input" spellCheck="false" defaultValue={urlField} onChange={() => setSuccessState(false)} required />
+        {errorMessage && <span className="inline-error">Error: {errorMessage}</span>}
+        <CopyButton isSuccessState={isSuccessState} />
         <button className="qr-code-btn">Create QR Code</button> {/* Yes, i know, this button copies the url too for now */}
       </form>
     </main>
