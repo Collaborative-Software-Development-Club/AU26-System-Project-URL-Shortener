@@ -4,7 +4,7 @@
 interface __BaseEnv_CloudflareBindings {
 	DB: D1Database;
 	ASSETS: Fetcher;
-	ID_ENCODING_KEY: string;
+	KEY: string;
 }
 declare namespace Cloudflare {
 	interface GlobalProps {

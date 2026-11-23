@@ -1,3 +1,5 @@
+// Deterministically generate short codes from database ID's
+
 import { env } from "cloudflare:workers"
 
 // Partially based on https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-38Gr1.2pd.pdf
@@ -17,8 +19,7 @@ const ROUNDS = 8
 if (ROUNDS >= 2 ** 8) throw new RangeError()
 
 // Get key from Workers Secrets
-const KEY_BYTES = Uint8Array.fromBase64(env.ID_ENCODING_KEY)
-const KEY = await crypto.subtle.importKey("raw", KEY_BYTES, "AES-CBC", false, ["encrypt"])
+const KEY = await crypto.subtle.importKey("raw", Uint8Array.fromBase64(env.KEY), "AES-CBC", false, ["encrypt"])
 
 
 const numToAlphabet = (a: number, b: number, domain: number, length: number): string => {
@@ -28,7 +29,7 @@ const numToAlphabet = (a: number, b: number, domain: number, length: number): st
   for (let j = 0; j < length; j++) {
 
     // Equivalent to: str = alphabet[num % alphabet.length] + str
-    str = ALPHABET[(domain % ALPHABET.length * a + b % ALPHABET.length) % ALPHABET.length] + str
+    str = ALPHABET[(domain % ALPHABET.length * a + b) % ALPHABET.length] + str
 
     // Equivalent to: num = Math.floor(num / alphabet.length)
     b = Math.floor((domain % ALPHABET.length * a + b) / ALPHABET.length)
@@ -78,12 +79,12 @@ const encrypt = async (otherHalf: number, common: number, round: number, domain:
   return (otherHalf + outNum * reverseMultiplier + domain) % domain
 }
 
-
+// id may be at most Number.MAX_SAFE_INTEGER = 2**53
 export const encode = async (id: number): Promise<string> => {
   if (id > Number.MAX_SAFE_INTEGER) throw new RangeError()
 
   const codeLength = Math.ceil((Math.log2(id) + Math.log2(SPACE_MULTIPLIER)) / ALPHABET_BITS + Number.EPSILON * 1000)
-  const cipherDomain = Math.ceil(2 ** (codeLength * ALPHABET_BITS / 2))
+  const cipherDomain = Math.ceil(2 ** (codeLength * ALPHABET_BITS / 2)) // Will be at most 2**36
   const plaintext = BigInt(id) * BigInt(SPACE_MULTIPLIER)
   let a = Number(plaintext / BigInt(cipherDomain)) // First half of working value
   let b = Number(plaintext % BigInt(cipherDomain)) // Second half
@@ -99,7 +100,7 @@ export const encode = async (id: number): Promise<string> => {
 
 export const decode = async (code: string): Promise<number> => {
   const cipherDomain = Math.ceil(2 ** (code.length * ALPHABET_BITS / 2))
-  if (cipherDomain > Number.MAX_SAFE_INTEGER / ALPHABET.length) throw new InvalidCodeError()
+  if (cipherDomain > Number.MAX_SAFE_INTEGER / (ALPHABET.length + 1)) throw new InvalidCodeError()
   let [a, b] = alphabetToNum(code, cipherDomain)
 
   // Apply Feistel cipher, in reverse
