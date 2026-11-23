@@ -23,6 +23,18 @@
       "preview_database_id": "d1e4bf70-f0ae-4e29-bbb4-70fac049661d"
     }
   ],
+  "analytics_engine_datasets": [
+    {
+      "binding": "ANALYTICS",
+      "dataset": "shortener-analytics"
+    }
+  ],
+  "analytics": {
+    "binding": "ANALYTICS_SQL"
+  },
+  "vars": {
+    "ANALYTICS_DATASET": "shortener-analytics"
+  },
   "observability": {
     "enabled": true
   },
@@ -40,7 +52,21 @@
         "database_name": "shortener-preview",
         "database_id": "d1e4bf70-f0ae-4e29-bbb4-70fac049661d"
       }
-    ]
+    ],
+    "analytics_engine_datasets": [
+      {
+        "binding": "ANALYTICS",
+        "dataset": "shortener-analytics-preview"
+      }
+    ],
+    "analytics": {
+      "binding": "ANALYTICS_SQL"
+    },
+    "vars": {
+      "ANALYTICS_DATASET": "shortener-analytics-preview"
+    },
   },
-  "placement": {  "mode": "smart" }
+  "placement": {
+    "mode": "smart"
+  }
 }
