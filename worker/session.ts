@@ -2,10 +2,12 @@
 
 import { env } from "cloudflare:workers"
 import type { Context } from "hono"
-import { deleteCookie, setCookie, setSignedCookie } from "hono/cookie"
+import { deleteCookie, getSignedCookie, setCookie, setSignedCookie } from "hono/cookie"
 import { HTTPException } from "hono/http-exception"
 
-export const setSessionCookies = async (c: Context, username: string) => {
+export const setSessionCookies = async (c: Context<{
+  Bindings: CloudflareBindings
+}>, username: string) => {
   await setSignedCookie( // This cookie provides proof that the user is logged in.
     c,
     "session", // Cookie name
@@ -28,7 +30,7 @@ export const setSessionCookies = async (c: Context, username: string) => {
     "", // Cookie value
     { // Cookie options
       maxAge: 2588400, // 1 hour before __Host-session, so there is never a situation where client thinks it is not logged in but actually is
-      sameSite: "Strict" 
+      sameSite: "Strict"
     }
   )
 }
@@ -50,18 +52,18 @@ export const clearSessionCookies = async (c: Context) => {
     "logged-in", // Cookie name
     { // Cookie options
       maxAge: 2588400, // 1 hour before __Host-session, so there is never a situation where client thinks it is not logged in but actually is
-      sameSite: "Strict" 
+      sameSite: "Strict"
     }
   )
 }
 
-    
+
 const key = await crypto.subtle.importKey(
   "raw",
   Uint8Array.fromBase64(env.KEY),
   { name: "HMAC", hash: "SHA-256" },
   false,
-  [ "sign" ]
+  ["sign"]
 )
 
 // Base64In must be valid base64
@@ -79,4 +81,47 @@ export const hmacSha256 = async (base64In: string): Promise<Uint8Array> => {
     hashIn
   )
   return new Uint8Array(hashBits)
+}
+
+function safeParse(str: string): Record<any, any> | null {
+  try {
+    return JSON.parse(str);
+  } catch (_) {
+    return null;
+  }
+}
+
+export async function validateSession(c: Context<{
+  Bindings: CloudflareBindings
+}>): Promise<boolean> {
+  const sessionCookie = await getSignedCookie(c, Uint8Array.fromBase64(c.env.KEY), 'session', 'host');
+  if (!sessionCookie) {
+    await clearSessionCookies(c);
+    return false;
+  }
+
+  const session = safeParse(sessionCookie);
+  if (!session || typeof session != 'object' || typeof session.username != 'string' || typeof session.expiration != 'number' || !Number.isFinite(session.expiration)) {
+    await clearSessionCookies(c);
+    return false;
+  }
+
+  const username = session.username;
+  const expiration = session.expiration;
+
+  if (expiration <= Math.floor(Date.now() / 1000)) {
+    await clearSessionCookies(c);
+    return false;
+  }
+
+  const user = await c.env.DB
+    .prepare("SELECT username FROM users WHERE username = ?")
+    .bind(username)
+    .first<{ username: string }>();
+  if (user === null) {
+    await clearSessionCookies(c);
+    return false;
+  }
+
+  return true;
 }
