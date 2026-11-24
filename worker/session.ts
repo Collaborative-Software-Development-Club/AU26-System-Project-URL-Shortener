@@ -69,7 +69,7 @@ export const key = await crypto.subtle.importKey(
 
 export async function getSessionUserId(c: Context<Env>): Promise<number | null> {
   // Get session cookie (Hono handles validation)
-  const sessionCookie = await getSignedCookie(c, Uint8Array.fromBase64(c.env.KEY), 'session', 'host');
+  const sessionCookie = await getSignedCookie(c, Uint8Array.fromBase64(c.env.KEY), 'session', 'host')
   if (!sessionCookie) return null
   
   const { userId, expiration }: { userId: number, expiration: number } = JSON.parse(sessionCookie) // We don't have to validate JSON because it could not have been modified by the user

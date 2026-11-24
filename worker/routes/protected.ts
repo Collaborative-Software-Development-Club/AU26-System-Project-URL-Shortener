@@ -1,9 +1,9 @@
-import { Hono } from "hono";
-import type { Env } from "../types.ts";
+import { Hono } from "hono"
+import type { Env } from "../types.ts"
 import { getSessionUserId } from "../session.ts"
-import { HTTPException } from "hono/http-exception";
+import { HTTPException } from "hono/http-exception"
 
-const protectedRoutes = new Hono<Env>();
+const protectedRoutes = new Hono<Env>()
 
 protectedRoutes.use('*', async(c, next) => {
   // Validate session and set username
@@ -17,9 +17,9 @@ protectedRoutes.get("/urls", async (c) => {
   const result = await c.env.DB
     .prepare("SELECT id, url FROM links where owner = ?")
     .bind(c.get("userId"))
-    .all();
+    .all()
 
-  return c.json(result.results);
+  return c.json(result.results)
 })
 
 
@@ -32,4 +32,4 @@ protectedRoutes.get("/urls", async (c) => {
 
 // })
 
-export default protectedRoutes;
+export default protectedRoutes

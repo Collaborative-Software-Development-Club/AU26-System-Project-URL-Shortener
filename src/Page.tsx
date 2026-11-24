@@ -57,7 +57,7 @@ export default function Page({ onLogin, loggedIn }: Props) {
       if (!loggedIn) return <ErrorPage>Log in to access this page</ErrorPage>
       return <MyUrls />
     case "/app/error":
-      const params = new URLSearchParams(window.location.search);
+      const params = new URLSearchParams(window.location.search)
       return <ErrorPage>{params.get("e")}</ErrorPage>
     default:
       return (

@@ -1,9 +1,9 @@
 import { Hono } from "hono"
 import type { Env } from "../types.ts"
-import { HTTPException } from "hono/http-exception";
-import { clearSessionCookies, key, setSessionCookies } from "../session.ts";
+import { HTTPException } from "hono/http-exception"
+import { clearSessionCookies, key, setSessionCookies } from "../session.ts"
 
-const auth = new Hono<Env>();
+const auth = new Hono<Env>()
 
 auth.get("/hash-information", async (c) => {
   const username = c.req.query("username")
@@ -52,7 +52,7 @@ auth.post("/login", async (c) => {
       key,
       new Uint8Array(dbResponse.hash),
       Uint8Array.fromBase64(request.hash)
-    );
+    )
   } catch { throw new HTTPException(400) }
   if (!valid) throw new HTTPException(401)
 
@@ -119,4 +119,4 @@ auth.post("/logout", async (c) => {
   return c.body(null, 204)
 })
 
-export default auth;
+export default auth

@@ -1,10 +1,10 @@
-import { Hono } from "hono";
-import type { Env } from "../types.ts";
-import { HTTPException } from "hono/http-exception";
-import { decode, encode } from "../short-code-generation.ts";
-import { getSessionUserId } from "../session.ts";
+import { Hono } from "hono"
+import type { Env } from "../types.ts"
+import { HTTPException } from "hono/http-exception"
+import { decode, encode } from "../short-code-generation.ts"
+import { getSessionUserId } from "../session.ts"
 
-const links = new Hono<Env>();
+const links = new Hono<Env>()
 
 // TODO: reject on invalid url
 links.post("/shorten", async (c) => {
@@ -33,9 +33,9 @@ links.get("/count/:code", async (c) => {
       start: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(), // last 30 days
       code: id
     }
-  });
+  })
 
-  return c.json({ count: result.data[0]?.count ?? 0 });
-});
+  return c.json({ count: result.data[0]?.count ?? 0 })
+})
 
-export default links;
+export default links

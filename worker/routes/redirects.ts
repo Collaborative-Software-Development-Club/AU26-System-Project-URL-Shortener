@@ -1,9 +1,9 @@
-import { Hono } from "hono";
-import type { Env } from "../types.ts";
-import { decode, InvalidCodeError } from "../short-code-generation.ts";
-import response404 from "../reponses/not-found.ts";
+import { Hono } from "hono"
+import type { Env } from "../types.ts"
+import { decode, InvalidCodeError } from "../short-code-generation.ts"
+import response404 from "../reponses/not-found.ts"
 
-const redirects = new Hono<Env>();
+const redirects = new Hono<Env>()
 
 
 redirects.get("/:code", async (c) => {
@@ -16,7 +16,7 @@ redirects.get("/:code", async (c) => {
       .bind(id)
       .first<{ url: string }>()
 
-    if (!result) throw new InvalidCodeError();
+    if (!result) throw new InvalidCodeError()
 
     c.env.ANALYTICS.writeDataPoint({
       "indexes": [String(id)],
@@ -31,14 +31,14 @@ redirects.get("/:code", async (c) => {
         Number(c.req.raw.cf?.latitude ?? 0),
         Number(c.req.raw.cf?.longitude ?? 0)
       ]
-    });
+    })
 
     return c.redirect(result.url)
 
   } catch (e) {
     if (e instanceof InvalidCodeError) return response404(c)
-    throw e;
+    throw e
   }
 })
 
-export default redirects;
+export default redirects

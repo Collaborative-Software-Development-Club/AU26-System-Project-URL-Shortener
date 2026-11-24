@@ -16,13 +16,12 @@ const app = new Hono<{ Bindings: CloudflareBindings }>()
 // })
 
 
+if (import.meta.env.DEV) app.use(logger())
 
-app.use(logger());
-
-app.route('/api', auth);
-app.route('/api', links);
-app.route('/api/user', protectedRoutes);
-app.route('/', redirects);
+app.route('/api', auth)
+app.route('/api', links)
+app.route('/api/user', protectedRoutes)
+app.route('/', redirects)
 app.get("*", response404)
 
 
