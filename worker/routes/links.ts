@@ -1,17 +1,10 @@
-import { Context, Hono } from "hono"
+import { Hono } from "hono"
 import type { Env } from "../types.ts"
 import { HTTPException } from "hono/http-exception"
 import { encode } from "../short-code-generation.ts"
 import { getSessionUserId } from "../session.ts"
 
 const links = new Hono<Env>()
-
-async function generateCodeToDB(c: Context<Env>, id: number, code: string) {
-  await c.env.DB
-    .prepare("UPDATE links SET code = ? WHERE id = ?")
-    .bind(code, id)
-    .run()
-}
 
 // TODO: reject on invalid url
 links.post("/shorten", async (c) => {
@@ -28,7 +21,13 @@ links.post("/shorten", async (c) => {
   const id = insertResult.meta.last_row_id
   const code = await encode(id)
 
-  c.executionCtx.waitUntil(generateCodeToDB(c, id, code))
+  c.executionCtx.waitUntil(
+    c.env.DB
+      .prepare("UPDATE links SET code = ? WHERE id = ?")
+      .bind(code, id)
+      .run()
+  ) // Insert generated code into database
+  // Must be done on seperate database call because code depends on ID
 
   return c.json({ code })
 })
