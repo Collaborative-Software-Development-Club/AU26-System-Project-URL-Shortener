@@ -125,6 +125,8 @@ page: optional number
 > urls: array\
 > Sorted descending by create_time. Will return 50 per page.
 >
+>> code: string
+>>
 >> url: string
 >>
 >> description: string | null

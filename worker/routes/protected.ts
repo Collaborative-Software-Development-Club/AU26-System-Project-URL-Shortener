@@ -17,7 +17,7 @@ protectedRoutes.get("/urls", async (c) => {
   const page = Number(c.req.query("page")) || 0
   if (page < 0) throw new HTTPException(400)
   const result = await c.env.DB
-    .prepare("SELECT url, description, create_time FROM links WHERE owner = ? ORDER BY create_time DESC LIMIT 50 OFFSET ?")
+    .prepare("SELECT url, code, description, create_time FROM links WHERE owner = ? ORDER BY create_time DESC LIMIT 50 OFFSET ?")
     .bind(c.get("userId"), page * 50)
     .all()
 

@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS links (
   id INTEGER PRIMARY KEY, -- Code determined from ID and vice versa
   url TEXT NOT NULL,
+  code TEXT,
   description TEXT,
   create_time INTEGER NOT NULL DEFAULT (unixepoch()), -- Unix time in seconds
   owner INTEGER REFERENCES users(id) ON DELETE SET NULL,
