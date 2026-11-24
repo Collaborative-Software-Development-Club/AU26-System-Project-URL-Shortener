@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { Env } from "../types.ts";
 import { HTTPException } from "hono/http-exception";
 import { decode, encode } from "../short-code-generation.ts";
+import { validateSession } from "../session.ts";
 
 const links = new Hono<Env>();
 
@@ -11,9 +12,11 @@ links.post("/shorten", async (c) => {
   catch (e) { throw new HTTPException(400) }
   if (typeof request.url !== "string" || request.url.length >= 1000) throw new HTTPException(400)
 
+  const user = await validateSession(c);
+
   const insertResult = await c.env.DB
-    .prepare("INSERT INTO links (url) VALUES (?)")
-    .bind(request.url.trim())
+    .prepare("INSERT INTO links (url, owner) VALUES (?, ?)")
+    .bind(request.url.trim(), user?.id ?? null)
     .run()
   const id = insertResult.meta.last_row_id
 

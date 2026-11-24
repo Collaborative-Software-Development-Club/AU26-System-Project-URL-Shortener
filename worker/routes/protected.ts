@@ -10,7 +10,7 @@ protectedRoutes.get("/urls", async (c) => {
   const user = c.get("user");
 
   const result = await c.env.DB
-    .prepare("SELECT id, url, code FROM links where owner = ?")
+    .prepare("SELECT id, url FROM links where owner = ?")
     .bind(user.id)
     .all();
 

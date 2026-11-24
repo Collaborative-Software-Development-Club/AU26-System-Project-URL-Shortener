@@ -4,6 +4,7 @@ import redirects from "./routes/redirects.ts"
 import auth from "./routes/auth.ts"
 import links from "./routes/links.ts"
 import { logger } from "hono/logger"
+import protectedRoutes from "./routes/protected.ts"
 
 const app = new Hono<{ Bindings: CloudflareBindings }>()
 
@@ -20,6 +21,7 @@ app.use(logger());
 
 app.route('/api', auth);
 app.route('/api', links);
+app.route('/api', protectedRoutes);
 app.route('/', redirects);
 app.get("*", response404)
 
