@@ -4,6 +4,7 @@ import { useFormStatus } from "react-dom"
 
 import "./index.css"
 import Page from "./Page"
+import { client } from "./API"
 
 const LogoutButton = () => {
   const { pending } = useFormStatus()
@@ -31,10 +32,7 @@ export default function App() {
 
   const logOut = async () => {
     try {
-      await fetch("/api/logout", {
-        method: "POST",
-        signal: AbortSignal.timeout(2000)
-      })
+      client.api.logout.$post();
     } catch (e) {}
     // If logout somehow failed, display error page
     // Else, go home

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { client } from "./API";
 
 export default function MyUrls() {
 
@@ -6,13 +7,16 @@ export default function MyUrls() {
   const [urls, setUrls] = useState<{ url: string, description: string | null, create_time: number }[]>([])
 
   const loadUrls = async () => {
-    let res: Response
     try {
-      res = await fetch('/api/user/urls')
-      const json = await res.json()
-      setUrls(json.urls)
-    } catch {
-      setError("could not reach server")
+      const res = await client.api.user.urls.$get();
+      const json = await res.json();
+      setUrls(json.urls);
+    } catch (e) {
+      if (e instanceof Error) {
+        setError(e.message);
+      } else {
+        setError("Unknown error");
+      }
     }
   }
 
@@ -32,6 +36,6 @@ export default function MyUrls() {
       </ul>
     </main>
   )
-  
+
 
 }

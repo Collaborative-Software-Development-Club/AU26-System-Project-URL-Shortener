@@ -6,39 +6,39 @@ import response404 from "../reponses/not-found.ts"
 const redirects = new Hono<Env>()
 
 
-redirects.get("/:code", async (c) => {
-  try {
+  .get("/:code", async (c) => {
+    try {
 
-    const code = c.req.param("code")
+      const code = c.req.param("code")
 
-    const result = await c.env.DB
-      .prepare("SELECT url FROM links WHERE code = ?")
-      .bind(code)
-      .first<{ url: string }>()
+      const result = await c.env.DB
+        .prepare("SELECT url FROM links WHERE code = ?")
+        .bind(code)
+        .first<{ url: string }>()
 
-    if (!result) throw new InvalidCodeError()
+      if (!result) throw new InvalidCodeError()
 
-    c.env.ANALYTICS.writeDataPoint({
-      "indexes": [String(code)],
-      "blobs": [
-        c.req.header("CF-Connecting-IP") ?? "",
-        c.req.header("User-Agent") ?? "",
-        c.req.header("Referer") ?? "",
-        String(c.req.raw.cf?.country ?? ""),
-        String(c.req.raw.cf?.city ?? "")
-      ],
-      "doubles": [
-        Number(c.req.raw.cf?.latitude ?? 0),
-        Number(c.req.raw.cf?.longitude ?? 0)
-      ]
-    })
+      c.env.ANALYTICS.writeDataPoint({
+        "indexes": [String(code)],
+        "blobs": [
+          c.req.header("CF-Connecting-IP") ?? "",
+          c.req.header("User-Agent") ?? "",
+          c.req.header("Referer") ?? "",
+          String(c.req.raw.cf?.country ?? ""),
+          String(c.req.raw.cf?.city ?? "")
+        ],
+        "doubles": [
+          Number(c.req.raw.cf?.latitude ?? 0),
+          Number(c.req.raw.cf?.longitude ?? 0)
+        ]
+      })
 
-    return c.redirect(result.url)
+      return c.redirect(result.url)
 
-  } catch (e) {
-    if (e instanceof InvalidCodeError) return response404(c)
-    throw e
-  }
-})
+    } catch (e) {
+      if (e instanceof InvalidCodeError) return response404(c)
+      throw e
+    }
+  })
 
 export default redirects

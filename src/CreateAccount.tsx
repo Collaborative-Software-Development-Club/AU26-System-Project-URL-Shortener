@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useFormStatus } from "react-dom"
 
 import { PBKDF2HashBase64 } from "./auth"
+import { client } from "./API"
 
 const CreateAccountBtn = () => {
   const { pending } = useFormStatus()
@@ -31,15 +32,12 @@ export default function CreateAccount({ onLogin }: Props) {
       let res: Response
       try {
         const hash = await PBKDF2HashBase64(submitted.password, salt, 500000, 256) // Needed seperate variable otherwise timeout would start when hash is being created, before the request is sent
-        res = await fetch("/api/create-account", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          signal: AbortSignal.timeout(2000),
-          body: JSON.stringify({
+        res = await client.api["create-account"].$post({
+          json: {
             username: submitted.username,
             hash,
             salt: salt.toBase64()
-          })
+          }
         })
       } catch (e) {
         throw "could not reach server"

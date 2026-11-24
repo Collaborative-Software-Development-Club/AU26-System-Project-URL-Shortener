@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useFormStatus } from "react-dom"
+import { client } from "./API"
 
 const CopyButton = ({ isSuccessState }: { isSuccessState: boolean }) => {
   const { pending } = useFormStatus()
@@ -26,10 +27,9 @@ export default function Home() {
 
       let res: Response
       try {
-        res = await fetch("/api/shorten", {
-          method: "POST",
-          body: formData
-        })
+        res = await client.api.shorten.$post({
+          form: { url: submitted }
+        });
       } catch (e) {
         throw "could not reach server"
       }

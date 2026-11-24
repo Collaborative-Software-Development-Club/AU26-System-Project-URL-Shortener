@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useFormStatus } from "react-dom"
 
 import { PBKDF2HashBase64 } from "./auth"
+import { client } from "./API"
 
 const LogInBtn = () => {
   const { pending } = useFormStatus()
@@ -11,11 +12,11 @@ const LogInBtn = () => {
 type Props = {
   onLogin?: () => void,
 }
-export default function Login ({ onLogin }: Props) {
+export default function Login({ onLogin }: Props) {
 
   const [formFields, setFormFields] = useState({ username: "", password: "" })
   const [errorMessage, setError] = useState("")
-  
+
   const logIn = async (formData: FormData) => {
 
     const submitted = {
@@ -28,8 +29,8 @@ export default function Login ({ onLogin }: Props) {
       // Fetch salt
       let res: Response
       try {
-        res = await fetch(`/api/hash-information?username=${submitted.username}`, {
-          signal: AbortSignal.timeout(2000)
+        res = await client.api["hash-information"].$get({
+          query: { username: submitted.username }
         })
       } catch (e) {
         throw "could not reach server"
@@ -45,15 +46,13 @@ export default function Login ({ onLogin }: Props) {
       // Log in
       try {
         const hash = await PBKDF2HashBase64(submitted.password, salt, 500000, 256) // Needed seperate variable otherwise timeout would start when hash is being created, before the request is sent
-        res = await fetch("/api/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          signal: AbortSignal.timeout(2000),
-          body: JSON.stringify({
+        res = await client.api.login.$post({
+          json: {
             username: submitted.username,
             hash
-          })
+          }
         })
+
       } catch (e) {
         throw "could not reach server"
       }
@@ -67,7 +66,7 @@ export default function Login ({ onLogin }: Props) {
       // Success
       onLogin?.()
       window.location.href = "/app/home"
-      
+
 
     } catch (e) {
       setError(typeof e === "string" ? e : "unknown error")

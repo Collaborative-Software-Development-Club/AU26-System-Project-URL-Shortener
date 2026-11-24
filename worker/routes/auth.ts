@@ -4,117 +4,114 @@ import { HTTPException } from "hono/http-exception"
 import { clearSessionCookies, key, setSessionCookies } from "../session.ts"
 
 const auth = new Hono<Env>()
+  .get("/hash-information", async (c) => {
+    const username = c.req.query("username")
+    if (username === undefined) throw new HTTPException(400)
 
-auth.get("/hash-information", async (c) => {
-  const username = c.req.query("username")
-  if (username === undefined) throw new HTTPException(400)
+    // Get salt from database
+    const dbResponse = await c.env.DB
+      .prepare("SELECT salt FROM users WHERE username = ?")
+      .bind(username)
+      .first<{ salt: string }>()
+    if (dbResponse === null) throw new HTTPException(404)
 
-  // Get salt from database
-  const dbResponse = await c.env.DB
-    .prepare("SELECT salt FROM users WHERE username = ?")
-    .bind(username)
-    .first<{ salt: string }>()
-  if (dbResponse === null) throw new HTTPException(404)
+    return c.json({ salt: dbResponse.salt })
+  })
+  .post("/login", async (c) => {
+    // Process user input
+    let request
+    try { request = await c.req.json<unknown>() }
+    catch (e) { throw new HTTPException(400) }
+    if (
+      // Verify request according to API
+      typeof request !== "object"
+      || request === null
+      || !("username" in request)
+      || typeof request.username !== "string"
+      || request.username.length >= 64
+      || !("hash" in request)
+      || typeof request.hash !== "string"
+      || request.hash.length >= 64
+    ) throw new HTTPException(400)
 
-  return c.json({ salt: dbResponse.salt })
-})
+    // Get sha256 hash, id from database
+    const dbResponse = await c.env.DB
+      .prepare("SELECT id, hash FROM users WHERE username = ?")
+      .bind(request.username)
+      .first<{ id: number, hash: number[] }>()
+    if (dbResponse === null) throw new HTTPException(401)
+
+    // Verify pbkdf2 hash is valid
+    let hashBytes
+    try {
+      hashBytes = Uint8Array.fromBase64(request.hash)
+    }
+    catch { throw new HTTPException(400) }
+    if (
+      !await crypto.subtle.verify(
+        "HMAC",
+        key,
+        new Uint8Array(dbResponse.hash),
+        hashBytes
+      )
+    ) throw new HTTPException(401)
+
+    // Authentication granted
+    await setSessionCookies(c, dbResponse.id)
+    return c.body(null, 204)
+  })
 
 
-auth.post("/login", async (c) => {
-  // Process user input
-  let request
-  try { request = await c.req.json<unknown>() }
-  catch (e) { throw new HTTPException(400) }
-  if (
-    // Verify request according to API
-    typeof request !== "object"
-    || request === null
-    || !("username" in request)
-    || typeof request.username !== "string"
-    || request.username.length >= 64
-    || !("hash" in request)
-    || typeof request.hash !== "string"
-    || request.hash.length >= 64
-  ) throw new HTTPException(400)
+  // TODO: fix issue. register accepts wrong length salts or empty
+  .post("/create-account", async (c) => {
+    // Process user input
+    let request
+    try { request = await c.req.json<unknown>() }
+    catch (e) { throw new HTTPException(400) }
+    if (
+      // Verify request according to API
+      typeof request !== "object"
+      || request === null
+      || !("username" in request)
+      || typeof request.username !== "string"
+      || request.username.length >= 64
+      || !("hash" in request)
+      || typeof request.hash !== "string"
+      || request.hash.length >= 64
+      || !("salt" in request)
+      || typeof request.salt !== "string"
+      || request.salt.length >= 64
+    ) throw new HTTPException(400)
+    try { Uint8Array.fromBase64(request.salt) } // Validate salt is base64
+    catch (e) { throw new HTTPException(400) }
 
-  // Get sha256 hash, id from database
-  const dbResponse = await c.env.DB
-    .prepare("SELECT id, hash FROM users WHERE username = ?")
-    .bind(request.username)
-    .first<{ id: number, hash: number[] }>()
-  if (dbResponse === null) throw new HTTPException(401)
-
-  // Verify pbkdf2 hash is valid
-  let hashBytes
-  try {
-    hashBytes = Uint8Array.fromBase64(request.hash)
-  }
-  catch { throw new HTTPException(400) }
-  if (
-    !await crypto.subtle.verify(
+    // Create HMAC-SHA256 hash
+    let hashIn
+    try { hashIn = Uint8Array.fromBase64(request.hash) }
+    catch (e) { throw new HTTPException(400) }
+    if (hashIn.byteLength !== 32) throw new HTTPException(400)
+    const hashBits = await crypto.subtle.sign(
       "HMAC",
       key,
-      new Uint8Array(dbResponse.hash),
-      hashBytes
+      hashIn
     )
-  ) throw new HTTPException(401)
 
-  // Authentication granted
-  await setSessionCookies(c, dbResponse.id)
-  return c.body(null, 204)
-})
+    // Insert account into DB
+    const dbResult = await c.env.DB
+      .prepare("INSERT INTO users (username, hash, salt) VALUES (?, ?, ?) ON CONFLICT DO NOTHING RETURNING id")
+      .bind(request.username, new Uint8Array(hashBits), request.salt)
+      .first<{ id: number }>()
+    if (dbResult === null) throw new HTTPException(409) // User already exists
 
-
-// TODO: fix issue. register accepts wrong length salts or empty
-auth.post("/create-account", async (c) => {
-  // Process user input
-  let request
-  try { request = await c.req.json<unknown>() }
-  catch (e) { throw new HTTPException(400) }
-  if (
-    // Verify request according to API
-    typeof request !== "object"
-    || request === null
-    || !("username" in request)
-    || typeof request.username !== "string"
-    || request.username.length >= 64
-    || !("hash" in request)
-    || typeof request.hash !== "string"
-    || request.hash.length >= 64
-    || !("salt" in request)
-    || typeof request.salt !== "string"
-    || request.salt.length >= 64
-  ) throw new HTTPException(400)
-  try { Uint8Array.fromBase64(request.salt) } // Validate salt is base64
-  catch (e) { throw new HTTPException(400) }
-
-  // Create HMAC-SHA256 hash
-  let hashIn
-  try { hashIn = Uint8Array.fromBase64(request.hash) }
-  catch (e) { throw new HTTPException(400) }
-  if (hashIn.byteLength !== 32) throw new HTTPException(400)
-  const hashBits = await crypto.subtle.sign(
-    "HMAC",
-    key,
-    hashIn
-  )
-
-  // Insert account into DB
-  const dbResult = await c.env.DB
-    .prepare("INSERT INTO users (username, hash, salt) VALUES (?, ?, ?) ON CONFLICT DO NOTHING RETURNING id")
-    .bind(request.username, new Uint8Array(hashBits), request.salt)
-    .first<{ id: number }>()
-  if (dbResult === null) throw new HTTPException(409) // User already exists
-
-  // Success
-  await setSessionCookies(c, dbResult.id)
-  return c.body(null, 204)
-})
+    // Success
+    await setSessionCookies(c, dbResult.id)
+    return c.body(null, 204)
+  })
 
 
-auth.post("/logout", (c) => {
-  clearSessionCookies(c)
-  return c.body(null, 204)
-})
+  .post("/logout", (c) => {
+    clearSessionCookies(c)
+    return c.body(null, 204)
+  })
 
 export default auth

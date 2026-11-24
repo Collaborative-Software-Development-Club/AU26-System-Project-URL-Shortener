@@ -7,7 +7,6 @@ import auth from "./routes/auth.ts"
 import links from "./routes/links.ts"
 import protectedRoutes from "./routes/protected.ts"
 
-const app = new Hono<{ Bindings: CloudflareBindings }>()
 
 // // To test whether a certain request invokes the worker
 // app.use("*", async (c, next) => {
@@ -15,14 +14,18 @@ const app = new Hono<{ Bindings: CloudflareBindings }>()
 //   await next()
 // })
 
+// if (import.meta.env.DEV) app.use(logger())
 
-if (import.meta.env.DEV) app.use(logger())
 
-app.route('/api', auth)
-app.route('/api', links)
-app.route('/api/user', protectedRoutes) // TODO either update this path in api docs, or revert to /api
-app.route('/', redirects)
-app.get("*", response404)
+const app = new Hono<{ Bindings: CloudflareBindings }>()
+
+.use('*', logger())
+.route('/api', auth)
+.route('/api', links)
+.route('/api/user', protectedRoutes) // TODO either update this path in api docs, or revert to /api
+.route('/', redirects)
+.get("*", response404)
 
 
 export default app
+export type Server = typeof app;
