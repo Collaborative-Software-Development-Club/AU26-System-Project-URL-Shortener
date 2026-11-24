@@ -1,9 +1,10 @@
 import { Hono } from "hono"
-import { response404 } from "./reponses/not-found.ts"
+import { logger } from "hono/logger"
+
+import response404 from "./reponses/not-found.ts"
 import redirects from "./routes/redirects.ts"
 import auth from "./routes/auth.ts"
 import links from "./routes/links.ts"
-import { logger } from "hono/logger"
 import protectedRoutes from "./routes/protected.ts"
 
 const app = new Hono<{ Bindings: CloudflareBindings }>()
@@ -15,7 +16,6 @@ const app = new Hono<{ Bindings: CloudflareBindings }>()
 // })
 
 
-// Display SPA with not found page otherwise
 
 app.use(logger());
 

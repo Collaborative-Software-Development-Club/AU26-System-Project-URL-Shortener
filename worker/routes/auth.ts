@@ -1,7 +1,7 @@
 import { Hono } from "hono"
 import type { Env } from "../types.ts"
 import { HTTPException } from "hono/http-exception";
-import { clearSessionCookies, hmacSha256, key, setSessionCookies } from "../session.ts";
+import { clearSessionCookies, key, setSessionCookies } from "../session.ts";
 
 const auth = new Hono<Env>();
 
@@ -37,35 +37,30 @@ auth.post("/login", async (c) => {
     || request.hash.length >= 64
   ) throw new HTTPException(400)
 
-  // Get hash from database
+  // Get hash, id from database
   const dbResponse = await c.env.DB
-    .prepare("SELECT hash FROM users WHERE username = ?")
+    .prepare("SELECT id, hash FROM users WHERE username = ?")
     .bind(request.username)
-    .first<{ hash: number[] }>()
+    .first<{ id: number, hash: number[] }>()
   if (dbResponse === null) throw new HTTPException(401)
 
-  let hashBytes
+  // Verify hash is valid
+  let valid
   try {
-    hashBytes = Uint8Array.fromBase64(request.hash)
-  } catch {
-    throw new HTTPException(400)
-  }
-  if (hashBytes.byteLength !== 32) throw new HTTPException(400)
-
-  // Check equality
-  const valid = await crypto.subtle.verify(
-    "HMAC",
-    key,
-    new Uint8Array(dbResponse.hash),
-    Uint8Array.fromBase64(request.hash)
-  );
-
-  if (!valid) throw new HTTPException(401);
+    valid = await crypto.subtle.verify(
+      "HMAC",
+      key,
+      new Uint8Array(dbResponse.hash),
+      Uint8Array.fromBase64(request.hash)
+    );
+  } catch { throw new HTTPException(400) }
+  if (!valid) throw new HTTPException(401)
 
   // Authentication granted
-  await setSessionCookies(c, request.username)
+  await setSessionCookies(c, dbResponse.id)
   return c.body(null, 204)
 })
+
 
 // TODO: fix issue. register accepts wrong length salts or empty
 auth.post("/create-account", async (c) => {
@@ -90,10 +85,23 @@ auth.post("/create-account", async (c) => {
   try { Uint8Array.fromBase64(request.salt) }
   catch (e) { throw new HTTPException(400) }
 
+  // Create HMAC-SHA256 hash
+  let hashIn
+  try { hashIn = Uint8Array.fromBase64(request.hash) }
+  catch (e) { throw new HTTPException(400) }
+  if (hashIn.byteLength !== 32) throw new HTTPException(400)
+  const hashBits = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    hashIn
+  )
+
+  // Insert account into DB
+  let dbResult
   try {
-    await c.env.DB
+    dbResult = await c.env.DB
       .prepare("INSERT INTO users (username, hash, salt) VALUES (?, ?, ?)")
-      .bind(request.username, await hmacSha256(request.hash), request.salt)
+      .bind(request.username, new Uint8Array(hashBits), request.salt)
       .run()
   } catch (e: any) {
     // User already exists: return 409
@@ -101,7 +109,7 @@ auth.post("/create-account", async (c) => {
   }
 
   // Success
-  await setSessionCookies(c, request.username)
+  await setSessionCookies(c, dbResult.meta.last_row_id)
   return c.body(null, 204)
 })
 

@@ -3,15 +3,15 @@
 import { env } from "cloudflare:workers"
 import type { Context } from "hono"
 import { deleteCookie, getSignedCookie, setCookie, setSignedCookie } from "hono/cookie"
-import { HTTPException } from "hono/http-exception"
-import type { AuthUser, Env } from "./types.ts"
+import type { Env } from "./types.ts"
 
-export const setSessionCookies = async (c: Context<Env>, username: string) => {
+
+export const setSessionCookies = async (c: Context<Env>, userId: number) => {
   await setSignedCookie( // This cookie provides proof that the user is logged in.
     c,
     "session", // Cookie name
     JSON.stringify({ // Cookie value
-      username,
+      userId,
       expiration: Math.floor(Date.now() / 1000) + 2592000 // 30 days expiration
     }),
     Uint8Array.fromBase64(c.env.KEY), // Secret for signing
@@ -33,6 +33,7 @@ export const setSessionCookies = async (c: Context<Env>, username: string) => {
     }
   )
 }
+
 
 export const clearSessionCookies = async (c: Context) => {
   deleteCookie(
@@ -65,60 +66,13 @@ export const key = await crypto.subtle.importKey(
   ["sign", "verify"]
 )
 
-// Base64In must be valid base64
-export const hmacSha256 = async (base64In: string): Promise<Uint8Array> => {
-  // Process user input
-  let hashIn
-  try { hashIn = Uint8Array.fromBase64(base64In) }
-  catch (e) { throw new HTTPException(400) }
-  if (hashIn.byteLength !== 32) throw new HTTPException(400)
 
-  // Create HMAC-SHA256 hash
-  const hashBits = await crypto.subtle.sign(
-    "HMAC",
-    key,
-    hashIn
-  )
-  return new Uint8Array(hashBits)
-}
-
-function safeParse(str: string): Record<any, any> | null {
-  try {
-    return JSON.parse(str);
-  } catch (_) {
-    return null;
-  }
-}
-
-export async function validateSession(c: Context<Env>): Promise<AuthUser | null> {
+export async function getSessionUserId(c: Context<Env>): Promise<number | null> {
+  // Get session cookie (Hono handles validation)
   const sessionCookie = await getSignedCookie(c, Uint8Array.fromBase64(c.env.KEY), 'session', 'host');
-  if (!sessionCookie) {
-    await clearSessionCookies(c);
-    return null;
-  }
-
-  const session = safeParse(sessionCookie);
-  if (!session || typeof session != 'object' || typeof session.username != 'string' || typeof session.expiration != 'number' || !Number.isFinite(session.expiration)) {
-    await clearSessionCookies(c);
-    return null;
-  }
-
-  const username = session.username;
-  const expiration = session.expiration;
-
-  if (expiration <= Math.floor(Date.now() / 1000)) {
-    await clearSessionCookies(c);
-    return null;
-  }
-
-  const user = await c.env.DB
-    .prepare("SELECT id, username FROM users WHERE username = ?")
-    .bind(username)
-    .first<AuthUser>()
-
-  if (user == null) {
-    await clearSessionCookies(c);
-  }
-
-  return user;
+  if (!sessionCookie) return null
+  
+  const { userId, expiration }: { userId: number, expiration: number } = JSON.parse(sessionCookie) // We don't have to validate JSON because it could not have been modified by the user
+  if (expiration < Date.now() / 1000) return null
+  return userId
 }

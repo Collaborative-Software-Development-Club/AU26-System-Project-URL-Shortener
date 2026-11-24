@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import type { Env } from "../types.ts";
 import { decode, InvalidCodeError } from "../short-code-generation.ts";
-import { response404 } from "../reponses/not-found.ts";
+import response404 from "../reponses/not-found.ts";
 
 const redirects = new Hono<Env>();
 

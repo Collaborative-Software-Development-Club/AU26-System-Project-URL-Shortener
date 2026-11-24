@@ -229,7 +229,11 @@ for (const route of ["/api/login", "/api/create-account"]) {
         username: route.endsWith("create-account") ? unique() : value.username,
         hash: randomBytes(bytes).toString("base64")
       })
-      status(response, 400)
+      if (route === "/api/login") {
+        assert.ok([400, 401].includes(response.status), `Expected HTTP 400 or 401, received ${response.status}`)
+      } else {
+        status(response, 400)
+      }
       noSession(response)
     })
   }

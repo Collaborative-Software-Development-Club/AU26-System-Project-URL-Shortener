@@ -1,17 +1,22 @@
 import { Hono } from "hono";
-import { requireAuth } from "../middleware/require-auth.ts";
 import type { Env } from "../types.ts";
+import { getSessionUserId } from "../session.ts"
+import { HTTPException } from "hono/http-exception";
 
 const protectedRoutes = new Hono<Env>();
 
-protectedRoutes.use('*', requireAuth);
+protectedRoutes.use('*', async(c, next) => {
+  // Validate session and set username
+  const userId = await getSessionUserId(c)
+  if (userId === null) throw new HTTPException(401)
+  c.set("userId", userId)
+  await next()
+})
 
 protectedRoutes.get("/urls", async (c) => {
-  const user = c.get("user");
-
   const result = await c.env.DB
     .prepare("SELECT id, url FROM links where owner = ?")
-    .bind(user.id)
+    .bind(c.get("userId"))
     .all();
 
   return c.json(result.results);
