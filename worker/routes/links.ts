@@ -1,10 +1,11 @@
 import { Hono } from "hono"
 import type { Env } from "../types.ts"
 import { HTTPException } from "hono/http-exception"
-import { decode, encode } from "../short-code-generation.ts"
+import { decode, encode, InvalidCodeError } from "../short-code-generation.ts"
 import { getSessionUserId } from "../session.ts"
 
 const links = new Hono<Env>()
+
 
 // TODO: reject on invalid url
 links.post("/shorten", async (c) => {
@@ -22,10 +23,15 @@ links.post("/shorten", async (c) => {
   return c.json({ code: await encode(id) })
 })
 
-links.get("/count/:code", async (c) => {
 
-  const code = c.req.param("code")
-  const id = await decode(code)
+links.get("/count/:code", async (c) => {
+  let id
+  try {
+    id = await decode(c.req.param("code"))
+  } catch (e) {
+    if (e instanceof InvalidCodeError) throw new HTTPException(404)
+    throw e
+  }
 
   const result = await c.env.ANALYTICS_SQL.query<{ count: number }>({
     query: `SELECT COUNT(*) AS count FROM events.analyticsEngine."${c.env.ANALYTICS_DATASET}" WHERE index1 = $code AND timestamp >= $start`,

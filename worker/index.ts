@@ -20,7 +20,7 @@ if (import.meta.env.DEV) app.use(logger())
 
 app.route('/api', auth)
 app.route('/api', links)
-app.route('/api/user', protectedRoutes)
+app.route('/api/user', protectedRoutes) // TODO either update this path in api docs, or revert to /api
 app.route('/', redirects)
 app.get("*", response404)
 

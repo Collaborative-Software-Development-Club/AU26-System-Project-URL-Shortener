@@ -37,24 +37,27 @@ auth.post("/login", async (c) => {
     || request.hash.length >= 64
   ) throw new HTTPException(400)
 
-  // Get hash, id from database
+  // Get sha256 hash, id from database
   const dbResponse = await c.env.DB
     .prepare("SELECT id, hash FROM users WHERE username = ?")
     .bind(request.username)
     .first<{ id: number, hash: number[] }>()
   if (dbResponse === null) throw new HTTPException(401)
 
-  // Verify hash is valid
-  let valid
+  // Verify pbkdf2 hash is valid
+  let hashBytes
   try {
-    valid = await crypto.subtle.verify(
+    hashBytes = Uint8Array.fromBase64(request.hash)
+  }
+  catch { throw new HTTPException(400) }
+  if (
+    !await crypto.subtle.verify(
       "HMAC",
       key,
       new Uint8Array(dbResponse.hash),
-      Uint8Array.fromBase64(request.hash)
+      hashBytes
     )
-  } catch { throw new HTTPException(400) }
-  if (!valid) throw new HTTPException(401)
+  ) throw new HTTPException(401)
 
   // Authentication granted
   await setSessionCookies(c, dbResponse.id)
@@ -82,7 +85,7 @@ auth.post("/create-account", async (c) => {
     || typeof request.salt !== "string"
     || request.salt.length >= 64
   ) throw new HTTPException(400)
-  try { Uint8Array.fromBase64(request.salt) }
+  try { Uint8Array.fromBase64(request.salt) } // Validate salt is base64
   catch (e) { throw new HTTPException(400) }
 
   // Create HMAC-SHA256 hash
@@ -97,24 +100,19 @@ auth.post("/create-account", async (c) => {
   )
 
   // Insert account into DB
-  let dbResult
-  try {
-    dbResult = await c.env.DB
-      .prepare("INSERT INTO users (username, hash, salt) VALUES (?, ?, ?)")
-      .bind(request.username, new Uint8Array(hashBits), request.salt)
-      .run()
-  } catch (e: any) {
-    // User already exists: return 409
-    throw e.message.includes("UNIQUE constraint failed") ? new HTTPException(409) : e
-  }
+  const dbResult = await c.env.DB
+    .prepare("INSERT INTO users (username, hash, salt) VALUES (?, ?, ?) ON CONFLICT DO NOTHING RETURNING id")
+    .bind(request.username, new Uint8Array(hashBits), request.salt)
+    .first<{ id: number }>()
+  if (dbResult === null) throw new HTTPException(409) // User already exists
 
   // Success
-  await setSessionCookies(c, dbResult.meta.last_row_id)
+  await setSessionCookies(c, dbResult.id)
   return c.body(null, 204)
 })
 
 
-auth.post("/logout", async (c) => {
+auth.post("/logout", (c) => {
   clearSessionCookies(c)
   return c.body(null, 204)
 })
