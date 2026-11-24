@@ -6,6 +6,7 @@ import { validateSession } from "../session.ts";
 
 const links = new Hono<Env>();
 
+// TODO: reject on invalid url
 links.post("/shorten", async (c) => {
   let request
   try { request = await c.req.parseBody() }
@@ -36,7 +37,7 @@ links.get("/count/:code", async (c) => {
     }
   });
 
-  return c.json({ count: result.data[0].count ?? 0 });
+  return c.json({ count: result.data[0]?.count ?? 0 });
 });
 
 export default links;

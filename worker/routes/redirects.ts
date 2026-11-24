@@ -37,6 +37,7 @@ redirects.get("/:code", async (c) => {
 
   } catch (e) {
     if (e instanceof InvalidCodeError) return response404(c)
+    throw e;
   }
 })
 

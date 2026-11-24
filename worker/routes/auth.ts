@@ -67,7 +67,7 @@ auth.post("/login", async (c) => {
   return c.body(null, 204)
 })
 
-
+// TODO: fix issue. register accepts wrong length salts or empty
 auth.post("/create-account", async (c) => {
   // Process user input
   let request

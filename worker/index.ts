@@ -21,7 +21,7 @@ app.use(logger());
 
 app.route('/api', auth);
 app.route('/api', links);
-app.route('/api', protectedRoutes);
+app.route('/api/user', protectedRoutes);
 app.route('/', redirects);
 app.get("*", response404)
 
