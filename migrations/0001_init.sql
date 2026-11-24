@@ -17,5 +17,6 @@ CREATE TABLE IF NOT EXISTS links (
   browser_token TEXT -- For not-logged-in users, so if they create an account AFTER creating a url, ownership can be transferred to new account
 ) STRICT;
 CREATE INDEX IF NOT EXISTS idx_links_owner_create_time ON links(owner, create_time DESC); -- Fast link lookup by owner (My Links page)
+CREATE INDEX IF NOT EXISTS idx_links_code ON links(code); -- Fast link lookup by code (nice comment here)
 
 PRAGMA optimize;
