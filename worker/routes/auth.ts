@@ -41,7 +41,7 @@ auth.post("/login", async (c) => {
   const dbResponse = await c.env.DB
     .prepare("SELECT hash FROM users WHERE username = ?")
     .bind(request.username)
-    .first<{ hash: Uint8Array }>()
+    .first<{ hash: number[] }>()
   if (dbResponse === null) throw new HTTPException(401)
 
   let hashBytes
@@ -56,7 +56,7 @@ auth.post("/login", async (c) => {
   const valid = await crypto.subtle.verify(
     "HMAC",
     key,
-    dbResponse.hash,
+    new Uint8Array(dbResponse.hash),
     Uint8Array.fromBase64(request.hash)
   );
 
