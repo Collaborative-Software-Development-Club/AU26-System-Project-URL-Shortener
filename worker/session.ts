@@ -4,10 +4,9 @@ import { env } from "cloudflare:workers"
 import type { Context } from "hono"
 import { deleteCookie, getSignedCookie, setCookie, setSignedCookie } from "hono/cookie"
 import { HTTPException } from "hono/http-exception"
+import type { AuthUser, Env } from "./types.ts"
 
-export const setSessionCookies = async (c: Context<{
-  Bindings: CloudflareBindings
-}>, username: string) => {
+export const setSessionCookies = async (c: Context<Env>, username: string) => {
   await setSignedCookie( // This cookie provides proof that the user is logged in.
     c,
     "session", // Cookie name
@@ -91,19 +90,17 @@ function safeParse(str: string): Record<any, any> | null {
   }
 }
 
-export async function validateSession(c: Context<{
-  Bindings: CloudflareBindings
-}>): Promise<boolean> {
+export async function validateSession(c: Context<Env>): Promise<AuthUser | null> {
   const sessionCookie = await getSignedCookie(c, Uint8Array.fromBase64(c.env.KEY), 'session', 'host');
   if (!sessionCookie) {
     await clearSessionCookies(c);
-    return false;
+    return null;
   }
 
   const session = safeParse(sessionCookie);
   if (!session || typeof session != 'object' || typeof session.username != 'string' || typeof session.expiration != 'number' || !Number.isFinite(session.expiration)) {
     await clearSessionCookies(c);
-    return false;
+    return null;
   }
 
   const username = session.username;
@@ -111,17 +108,17 @@ export async function validateSession(c: Context<{
 
   if (expiration <= Math.floor(Date.now() / 1000)) {
     await clearSessionCookies(c);
-    return false;
+    return null;
   }
 
   const user = await c.env.DB
-    .prepare("SELECT username FROM users WHERE username = ?")
+    .prepare("SELECT id, username FROM users WHERE username = ?")
     .bind(username)
-    .first<{ username: string }>();
-  if (user === null) {
+    .first<AuthUser>()
+
+  if (user == null) {
     await clearSessionCookies(c);
-    return false;
   }
 
-  return true;
+  return user;
 }

@@ -1,3 +1,11 @@
+export type AuthUser = {
+  id: number,
+  username: string
+};
+
 export type Env = {
-  Bindings: CloudflareBindings
+  Bindings: CloudflareBindings,
+  Variables: {
+    user: AuthUser
+  }
 };
