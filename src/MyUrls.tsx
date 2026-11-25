@@ -8,7 +8,11 @@ export default function MyUrls() {
 
   const loadUrls = async () => {
     try {
-      const res = await client.api.user.urls.$get();
+      const res = await client.api.user.urls.$get({
+        query: {
+          page: "0"
+        }
+      });
       const json = await res.json();
       setUrls(json.urls);
     } catch (e) {

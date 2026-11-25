@@ -1,23 +1,21 @@
 import { Hono } from "hono"
 import type { Env } from "../types.ts"
-import { HTTPException } from "hono/http-exception"
 import { encode } from "../short-code-generation.ts"
 import { getSessionUserId } from "../session.ts"
+import { zValidator } from "@hono/zod-validator"
+import { ShortenRequestSchema } from "../../shared/schema.ts"
 
 
 const links = new Hono<Env>()
 
 
-  // TODO: reject on invalid url
-  .post("/shorten", async (c) => {
-    let request
-    try { request = await c.req.parseBody() }
-    catch (e) { throw new HTTPException(400) }
-    if (typeof request.url !== "string" || request.url.length >= 1000) throw new HTTPException(400)
+  .post("/shorten", zValidator('form', ShortenRequestSchema) ,async (c) => {
+
+    const request = c.req.valid('form');
 
     const insertResult = await c.env.DB
       .prepare("INSERT INTO links (url, owner) VALUES (?, ?)")
-      .bind(request.url.trim(), await getSessionUserId(c))
+      .bind(request.url, await getSessionUserId(c))
       .run()
 
     const id = insertResult.meta.last_row_id

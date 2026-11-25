@@ -2,6 +2,8 @@ import { Hono } from "hono"
 import type { Env } from "../types.ts"
 import { getSessionUserId } from "../session.ts"
 import { HTTPException } from "hono/http-exception"
+import { zValidator } from "@hono/zod-validator"
+import { UrlsQuerySchema } from "../../shared/schema.ts"
 
 const protectedRoutes = new Hono<Env>()
 
@@ -13,9 +15,10 @@ const protectedRoutes = new Hono<Env>()
     await next()
   })
 
-  .get("/urls", async (c) => {
-    const page = Number(c.req.query("page")) || 0
-    if (page < 0) throw new HTTPException(400)
+  .get("/urls", zValidator("query", UrlsQuerySchema), async (c) => {
+    
+    const { page } = c.req.valid("query"); 
+
     const result = await c.env.DB
       .prepare("SELECT url, code, description, create_time FROM links WHERE owner = ? ORDER BY create_time DESC LIMIT 50 OFFSET ?")
       .bind(c.get("userId"), page * 50)

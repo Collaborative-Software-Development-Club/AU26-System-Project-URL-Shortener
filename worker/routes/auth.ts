@@ -2,12 +2,12 @@ import { Hono } from "hono"
 import type { Env } from "../types.ts"
 import { HTTPException } from "hono/http-exception"
 import { clearSessionCookies, key, setSessionCookies } from "../session.ts"
+import { zValidator } from "@hono/zod-validator"
+import { CreateAccountRequestSchema, HashInformationQuerySchema, LoginRequestSchema } from "../../shared/schema.ts"
 
 const auth = new Hono<Env>()
-  .get("/hash-information", async (c) => {
-    const username = c.req.query("username")
-    if (username === undefined) throw new HTTPException(400)
-
+  .get("/hash-information", zValidator('query', HashInformationQuerySchema), async (c) => {
+    const { username } = c.req.valid('query');
     // Get salt from database
     const dbResponse = await c.env.DB
       .prepare("SELECT salt FROM users WHERE username = ?")
@@ -17,22 +17,9 @@ const auth = new Hono<Env>()
 
     return c.json({ salt: dbResponse.salt })
   })
-  .post("/login", async (c) => {
+  .post("/login", zValidator('json', LoginRequestSchema), async (c) => {
     // Process user input
-    let request
-    try { request = await c.req.json<unknown>() }
-    catch (e) { throw new HTTPException(400) }
-    if (
-      // Verify request according to API
-      typeof request !== "object"
-      || request === null
-      || !("username" in request)
-      || typeof request.username !== "string"
-      || request.username.length >= 64
-      || !("hash" in request)
-      || typeof request.hash !== "string"
-      || request.hash.length >= 64
-    ) throw new HTTPException(400)
+    const request = c.req.valid('json');
 
     // Get sha256 hash, id from database
     const dbResponse = await c.env.DB
@@ -41,18 +28,12 @@ const auth = new Hono<Env>()
       .first<{ id: number, hash: number[] }>()
     if (dbResponse === null) throw new HTTPException(401)
 
-    // Verify pbkdf2 hash is valid
-    let hashBytes
-    try {
-      hashBytes = Uint8Array.fromBase64(request.hash)
-    }
-    catch { throw new HTTPException(400) }
     if (
       !await crypto.subtle.verify(
         "HMAC",
         key,
         new Uint8Array(dbResponse.hash),
-        hashBytes
+        request.hash
       )
     ) throw new HTTPException(401)
 
@@ -61,39 +42,15 @@ const auth = new Hono<Env>()
     return c.body(null, 204)
   })
 
-
-  // TODO: fix issue. register accepts wrong length salts or empty
-  .post("/create-account", async (c) => {
+  
+  .post("/create-account", zValidator('json', CreateAccountRequestSchema), async (c) => {
     // Process user input
-    let request
-    try { request = await c.req.json<unknown>() }
-    catch (e) { throw new HTTPException(400) }
-    if (
-      // Verify request according to API
-      typeof request !== "object"
-      || request === null
-      || !("username" in request)
-      || typeof request.username !== "string"
-      || request.username.length >= 64
-      || !("hash" in request)
-      || typeof request.hash !== "string"
-      || request.hash.length >= 64
-      || !("salt" in request)
-      || typeof request.salt !== "string"
-      || request.salt.length >= 64
-    ) throw new HTTPException(400)
-    try { Uint8Array.fromBase64(request.salt) } // Validate salt is base64
-    catch (e) { throw new HTTPException(400) }
-
+    const request = c.req.valid('json');
     // Create HMAC-SHA256 hash
-    let hashIn
-    try { hashIn = Uint8Array.fromBase64(request.hash) }
-    catch (e) { throw new HTTPException(400) }
-    if (hashIn.byteLength !== 32) throw new HTTPException(400)
     const hashBits = await crypto.subtle.sign(
       "HMAC",
       key,
-      hashIn
+      request.hash
     )
 
     // Insert account into DB

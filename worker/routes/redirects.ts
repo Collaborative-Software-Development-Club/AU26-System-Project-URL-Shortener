@@ -1,15 +1,21 @@
-import { Hono } from "hono"
+import { Context, Hono } from "hono"
 import type { Env } from "../types.ts"
 import { InvalidCodeError } from "../short-code-generation.ts"
 import response404 from "../reponses/not-found.ts"
+import { zValidator } from "@hono/zod-validator"
+import { ShortCodeParamsSchema } from "../../shared/schema.ts"
 
 const redirects = new Hono<Env>()
 
 
   .get("/:code", async (c) => {
-    try {
 
-      const code = c.req.param("code")
+    const parsed = ShortCodeParamsSchema.safeParse(c.req.param())
+    if (!parsed.success) return response404(c)
+
+    const { code } = parsed.data
+
+    try {
 
       const result = await c.env.DB
         .prepare("SELECT url FROM links WHERE code = ?")
