@@ -175,6 +175,65 @@ Home
 }
 
 /*
+My URLs
+*/
+
+.my-urls-dashboard {
+  max-width: 800px;
+  text-align: left;
+}
+
+.my-urls-header {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 15px;
+  padding: 0 0 20px;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.url-count {
+  padding: 5px 12px;
+  border: 1px solid var(--accent-border);
+  border-radius: 20px;
+  background-color: var(--accent-bg);
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.empty-state {
+  padding: 30px 15px;
+  text-align: center;
+  border: 1px dashed var(--border);
+}
+
+.url-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  list-style: none;
+}
+
+.url-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+
+.url-card-link {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.url-card small {
+  font-size: 0.85rem;
+}
+
+/*
 Errors
 */
 
