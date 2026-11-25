@@ -32,7 +32,7 @@ export default function App() {
 
   const logOut = async () => {
     try {
-      client.api.logout.$post();
+      await client.api.logout.$post();
     } catch (e) {}
     // If logout somehow failed, display error page
     // Else, go home
