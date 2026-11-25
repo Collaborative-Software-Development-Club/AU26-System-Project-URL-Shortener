@@ -1,8 +1,7 @@
-import { Context, Hono } from "hono"
+import { Hono } from "hono"
 import type { Env } from "../types.ts"
 import { InvalidCodeError } from "../short-code-generation.ts"
 import response404 from "../reponses/not-found.ts"
-import { zValidator } from "@hono/zod-validator"
 import { ShortCodeParamsSchema } from "../../shared/schema.ts"
 
 const redirects = new Hono<Env>()
