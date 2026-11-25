@@ -3,7 +3,7 @@ import { z } from "zod";
 export const DestinationUrlSchema = z.string()
   .trim()
   .min(1)
-  .max(999)
+  .max(10000)
   .pipe(z.url({ protocol: /^https?$/ }))
 
 export const ShortenRequestSchema = z.object({
