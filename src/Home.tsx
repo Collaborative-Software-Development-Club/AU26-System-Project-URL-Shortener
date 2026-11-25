@@ -25,14 +25,9 @@ export default function Home() {
       const url = URL.parse(submitted) as URL
       if (url.origin === window.location.origin) throw "nice try!"
 
-      let res: Response
-      try {
-        res = await client.api.shorten.$post({
+      const res = await client.api.shorten.$post({
           form: { url: submitted }
         });
-      } catch (e) {
-        throw "could not reach server"
-      }
 
       if (!res.ok) throw res.status == 429 ? "rate limit hit" : "internal server error"
 

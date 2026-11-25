@@ -13,6 +13,12 @@ export default function MyUrls() {
           page: "0"
         }
       });
+
+      if (res.status !== 200) {
+        throw new Error("Could not load URLs")
+      }
+
+
       const json = await res.json();
       setUrls(json.urls);
     } catch (e) {

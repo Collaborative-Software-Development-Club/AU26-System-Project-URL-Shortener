@@ -27,39 +27,30 @@ export default function Login({ onLogin }: Props) {
     try {
 
       // Fetch salt
-      let res: Response
-      try {
-        res = await client.api["hash-information"].$get({
-          query: { username: submitted.username }
-        })
-      } catch (e) {
-        throw "could not reach server"
-      }
-      if (!res.ok) {
-        if (res.status == 404) throw "user does not exist"
-        else if (res.status == 429) throw "rate limit hit"
-        else if (res.status >= 500) throw "internal server error"
+      const hashInfo = await client.api["hash-information"].$get({
+        query: { username: submitted.username }
+      })
+
+      if (!hashInfo.ok) {
+        if (hashInfo.status == 404) throw "user does not exist"
+        else if (hashInfo.status == 429) throw "rate limit hit"
+        else if (hashInfo.status >= 500) throw "internal server error"
         else throw "unknown error"
       }
-      const salt = Uint8Array.fromBase64((await res.json()).salt)
 
-      // Log in
-      try {
-        const hash = await PBKDF2HashBase64(submitted.password, salt, 500000, 256) // Needed seperate variable otherwise timeout would start when hash is being created, before the request is sent
-        res = await client.api.login.$post({
-          json: {
-            username: submitted.username,
-            hash
-          }
-        })
+      const hashObj = await hashInfo.json();
+      const salt = Uint8Array.fromBase64(hashObj.salt);
 
-      } catch (e) {
-        throw "could not reach server"
-      }
-      if (!res.ok) {
-        if (res.status == 401) throw "incorrect password"
-        else if (res.status == 429) throw "rate limit hit"
-        else if (res.status >= 500) throw "internal server error"
+      const hash = await PBKDF2HashBase64(submitted.password, salt, 500000, 256) // Needed seperate variable otherwise timeout would start when hash is being created, before the request is sent
+      const loginRes = await client.api.login.$post({
+        json: {
+          username: submitted.username,
+          hash
+        }
+      })
+
+      if (!loginRes.ok) {
+        if (loginRes.status >= 500) throw "internal server error"
         else throw "unknown error"
       }
 

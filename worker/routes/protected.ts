@@ -5,6 +5,13 @@ import { HTTPException } from "hono/http-exception"
 import { zValidator } from "@hono/zod-validator"
 import { UrlsQuerySchema } from "../../shared/schema.ts"
 
+type LinkRow = {
+  url: string
+  code: string | null
+  description: string | null
+  create_time: number
+}
+
 const protectedRoutes = new Hono<Env>()
 
   .use('*', async (c, next) => {
@@ -22,7 +29,7 @@ const protectedRoutes = new Hono<Env>()
     const result = await c.env.DB
       .prepare("SELECT url, code, description, create_time FROM links WHERE owner = ? ORDER BY create_time DESC LIMIT 50 OFFSET ?")
       .bind(c.get("userId"), page * 50)
-      .all()
+      .all<LinkRow>()
 
     return c.json({ urls: result.results })
   })
