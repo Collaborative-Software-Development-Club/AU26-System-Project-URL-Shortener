@@ -40,8 +40,17 @@ const protectedRoutes = new Hono<Env>()
 // })
 
 
-// protectedRoutes.delete("/urls/:code", async (c) => {
+.delete("/urls/:code", async (c) => {
+  const result = await c.env.DB
+    .prepare("DELETE from links WHERE code = ? AND owner = ?")
+    .bind(c.req.param("code"), c.get("userId"))
+    .run()
 
-// })
+    if (result.meta.changes === 0) {
+      return c.json({ error: "URL not found" }, 404)
+    }
+
+    return c.body(null, 204)
+})
 
 export default protectedRoutes

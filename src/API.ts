@@ -79,3 +79,13 @@ export async function shortenUrl(url: string) {
 
   return await response.json()
 }
+
+export async function deleteUrl(code: string) {
+  const response = await client.api.user.urls[":code"].$delete({
+    param: { code }
+  })
+
+  if (!response.ok) {
+    throw new Error("Could not delete URL")
+  }
+}

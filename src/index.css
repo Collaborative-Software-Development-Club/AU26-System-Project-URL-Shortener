@@ -233,6 +233,32 @@ My URLs
   font-size: 0.85rem;
 }
 
+.url-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.url-delete-btn {
+  padding: 6px 12px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  color: var(--error);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.url-delete-btn:hover {
+  background-color: color-mix(in srgb, var(--error) 10%, transparent);
+}
+
+.url-delete-btn:focus-visible {
+  outline: 2px solid var(--error);
+  outline-offset: 3px;
+}
+
 /*
 Errors
 */
