@@ -1,38 +1,20 @@
-import { useEffect, useState } from "react"
-import { client } from "./API";
+import { getUrls } from "./API";
+import { useQuery } from "@tanstack/react-query";
 
 export default function MyUrls() {
 
-  const [errorMessage, setError] = useState("")
-  const [urls, setUrls] = useState<{ url: string, description: string | null, create_time: number, code: string | null }[]>([])
+  const { data: urls = [], isPending, error } = useQuery({
+    queryKey: ["urls", 0],
+    queryFn: () => getUrls(0)
+  });
 
-  const loadUrls = async () => {
-    try {
-      const res = await client.api.user.urls.$get({
-        query: {
-          page: "0"
-        }
-      });
-
-      if (res.status !== 200) {
-        throw new Error("Could not load URLs")
-      }
-
-
-      const json = await res.json();
-      setUrls(json.urls);
-    } catch (e) {
-      if (e instanceof Error) {
-        setError(e.message);
-      } else {
-        setError("Unknown error");
-      }
-    }
+  if (isPending) {
+    return <main>Loading URLS...</main>
   }
 
-  useEffect(() => {
-    loadUrls()
-  }, [])
+  if (error) {
+    return <main><span className="inline-error">Error: {error.message}</span></main>
+  }
 
   return (
     <main className="my-urls-dashboard">
@@ -45,8 +27,8 @@ export default function MyUrls() {
           {urls.length} {urls.length === 1 ? "URL" : "URLs"}
         </span>
       </header>
-      {errorMessage && <span className="inline-error">Error: {errorMessage}</span>}
-      {urls.length === 0 && !errorMessage ? (
+            
+      {urls.length === 0 ? (
         <p className="empty-state">You haven't created any URLs yet.</p>
       ) : (
         <ul className="url-list">

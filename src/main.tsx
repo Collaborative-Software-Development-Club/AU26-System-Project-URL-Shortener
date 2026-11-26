@@ -5,6 +5,7 @@ import { useFormStatus } from "react-dom"
 import "./index.css"
 import Page from "./Page"
 import { client } from "./API"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 const LogoutButton = () => {
   const { pending } = useFormStatus()
@@ -19,7 +20,7 @@ const LogoutButton = () => {
 export default function App() {
 
   // Logged-in state management
-  const [loggedIn, setLoggedIn] = useState< boolean | null >(null)
+  const [loggedIn, setLoggedIn] = useState<boolean | null>(null)
   const checkIfLoggedIn = async (): Promise<boolean> => {
     const l = Boolean(await cookieStore.get("logged-in"))
     setLoggedIn(l)
@@ -33,7 +34,7 @@ export default function App() {
   const logOut = async () => {
     try {
       await client.api.logout.$post();
-    } catch (e) {}
+    } catch (e) { }
     // If logout somehow failed, display error page
     // Else, go home
     window.location.href = await checkIfLoggedIn() ? "/app/error?e=Could%20not%20connect%20to%20server." : "/app/home"
@@ -62,8 +63,22 @@ export default function App() {
   )
 }
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      retry: false
+    },
+    mutations: {
+      retry: false
+    }
+  }
+})
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <QueryClientProvider client={queryClient}>
+      <App />
+    </QueryClientProvider>
   </StrictMode>,
 )
