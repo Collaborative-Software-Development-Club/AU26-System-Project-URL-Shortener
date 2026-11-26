@@ -23,15 +23,6 @@ export const setSessionCookies = async (c: Context<Env>, userId: number) => {
       prefix: "host"
     }
   )
-  setCookie( // This cookie signals to the client that the user is logged in, as the client cannot access __Host-session
-    c,
-    "logged-in", // Cookie name
-    "", // Cookie value
-    { // Cookie options
-      maxAge: 2588400, // 1 hour before __Host-session, so there is never a situation where client thinks it is not logged in but actually is
-      sameSite: "Strict"
-    }
-  )
 }
 
 
@@ -44,13 +35,6 @@ export const clearSessionCookies = (c: Context) => {
       secure: true,
       sameSite: "Strict",
       prefix: "host"
-    }
-  )
-  deleteCookie(
-    c,
-    "logged-in", // Cookie name
-    { // Cookie options
-      sameSite: "Strict"
     }
   )
 }

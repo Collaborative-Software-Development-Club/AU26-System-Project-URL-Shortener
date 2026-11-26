@@ -17,11 +17,10 @@ const ErrorPage = ({ children }: { children: string | null }) => (
 )
 
 type Props = {
-  onLogin?: () => void,
   loggedIn: boolean
 }
 
-export default function Page({ onLogin, loggedIn }: Props) {
+export default function Page({ loggedIn }: Props) {
   const [path, setPath] = useState(window.location.pathname)
 
   // Handle link clicks and browser navigation buttons
@@ -49,10 +48,10 @@ export default function Page({ onLogin, loggedIn }: Props) {
       return <Home />
     case "/app/login":
       if (loggedIn) return <ErrorPage>Log out to access this page</ErrorPage>
-      return <Login onLogin={onLogin} />
+      return <Login />
     case "/app/create-account":
       if (loggedIn) return <ErrorPage>Log out to access this page</ErrorPage>
-      return <CreateAccount onLogin={onLogin} />
+      return <CreateAccount />
     case "/app/my-urls":
       if (!loggedIn) return <ErrorPage>Log in to access this page</ErrorPage>
       return <MyUrls />

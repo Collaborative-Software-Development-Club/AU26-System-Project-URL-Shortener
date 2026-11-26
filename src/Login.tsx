@@ -1,20 +1,20 @@
 import { useState } from "react"
 
 import { loginUser, type Credentials } from "./API"
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 
-type Props = {
-  onLogin?: () => void,
-}
-export default function Login({ onLogin }: Props) {
+
+export default function Login() {
 
   const [formFields, setFormFields] = useState<Credentials>({ username: "", password: "" })
+
+  const queryClient = useQueryClient()
 
   const login = useMutation({
     mutationFn: loginUser,
     retry: false,
     onSuccess: async () => {
-      await onLogin?.()
+      await queryClient.invalidateQueries({ queryKey: ["session"] })
       window.location.href = "/app/home"
     },
   })

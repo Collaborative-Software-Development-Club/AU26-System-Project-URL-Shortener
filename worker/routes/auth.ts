@@ -1,7 +1,7 @@
 import { Hono } from "hono"
 import type { Env } from "../types.ts"
 import { HTTPException } from "hono/http-exception"
-import { clearSessionCookies, key, setSessionCookies } from "../session.ts"
+import { clearSessionCookies, getSessionUserId, key, setSessionCookies } from "../session.ts"
 import { zValidator } from "@hono/zod-validator"
 import { CreateAccountRequestSchema, HashInformationQuerySchema, LoginRequestSchema } from "../../shared/schema.ts"
 
@@ -42,7 +42,7 @@ const auth = new Hono<Env>()
     return c.body(null, 204)
   })
 
-  
+
   .post("/create-account", zValidator('json', CreateAccountRequestSchema), async (c) => {
     // Process user input
     const request = c.req.valid('json');
@@ -69,6 +69,15 @@ const auth = new Hono<Env>()
   .post("/logout", (c) => {
     clearSessionCookies(c)
     return c.body(null, 204)
+  })
+
+  .get("/session", async (c) => {
+    c.header('Cache-Control', 'no-store')
+    const userId = await getSessionUserId(c)
+
+    return c.json({
+      id: userId
+    })
   })
 
 export default auth

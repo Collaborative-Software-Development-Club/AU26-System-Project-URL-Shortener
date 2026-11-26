@@ -89,3 +89,11 @@ export async function deleteUrl(code: string) {
     throw new Error("Could not delete URL")
   }
 }
+
+export async function getSession() {
+  const response = await client.api.session.$get()
+
+  if (!response.ok) throw new Error("Could not check session")
+
+    return await response.json()
+}

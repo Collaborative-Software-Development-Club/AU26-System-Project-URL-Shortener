@@ -5,10 +5,12 @@ import { useFormStatus } from "react-dom"
 import "./index.css"
 import Page from "./Page"
 import { client } from "./API"
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query"
+import { useSession } from "./useSession"
 
 const LogoutButton = () => {
   const { pending } = useFormStatus()
+
   return (
     <button className="navbar-item-solid" disabled={pending}>
       {pending ? "Please wait..." : "Log Out"}
@@ -19,25 +21,22 @@ const LogoutButton = () => {
 
 export default function App() {
 
-  // Logged-in state management
-  const [loggedIn, setLoggedIn] = useState<boolean | null>(null)
-  const checkIfLoggedIn = async (): Promise<boolean> => {
-    const l = Boolean(await cookieStore.get("logged-in"))
-    setLoggedIn(l)
-    return l
-  }
-  if (loggedIn === null) {
-    checkIfLoggedIn()
-    return
-  }
+  const queryClient = useQueryClient()
+  const session = useSession()
+  if (session.isPending) return <p>Loading...</p>
+  if (session.isError) return <p>Could not check your session. Please reload.</p>
+
+  const loggedIn = session.data.id !== null
 
   const logOut = async () => {
     try {
-      await client.api.logout.$post();
-    } catch (e) { }
-    // If logout somehow failed, display error page
-    // Else, go home
-    window.location.href = await checkIfLoggedIn() ? "/app/error?e=Could%20not%20connect%20to%20server." : "/app/home"
+      const response = await client.api.logout.$post();
+      if (!response.ok) throw new Error("Logout failed")
+      await queryClient.invalidateQueries({ queryKey: ["session"] })
+      window.location.href = "/app/home"
+    } catch (e) {
+      window.location.href = "/app/error?e=Could%20not%20log%20out."
+    }
   }
 
 
@@ -58,7 +57,7 @@ export default function App() {
           </>
         }
       </header>
-      <Page onLogin={checkIfLoggedIn} loggedIn={loggedIn} />
+      <Page loggedIn={loggedIn} />
     </>
   )
 }
