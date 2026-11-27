@@ -10,11 +10,13 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS links (
   id INTEGER PRIMARY KEY, -- Code determined from ID and vice versa
   url TEXT NOT NULL,
+  code TEXT,
   description TEXT,
   create_time INTEGER NOT NULL DEFAULT (unixepoch()), -- Unix time in seconds
   owner INTEGER REFERENCES users(id) ON DELETE SET NULL,
   browser_token TEXT -- For not-logged-in users, so if they create an account AFTER creating a url, ownership can be transferred to new account
 ) STRICT;
-CREATE INDEX IF NOT EXISTS idx_links_owner ON links(owner); -- Fast link lookup by owner (My Links page)
+CREATE INDEX IF NOT EXISTS idx_links_owner_create_time ON links(owner, create_time DESC); -- Fast link lookup by owner (My Links page)
+CREATE INDEX IF NOT EXISTS idx_links_code ON links(code); -- Fast link lookup by code (nice comment here)
 
 PRAGMA optimize;

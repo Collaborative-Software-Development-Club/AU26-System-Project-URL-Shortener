@@ -1,86 +1,32 @@
 import { useState } from "react"
-import { useFormStatus } from "react-dom"
 
-import { PBKDF2HashBase64 } from "./auth"
+import { loginUser, type Credentials } from "./API"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 
-const LogInBtn = () => {
-  const { pending } = useFormStatus()
-  return <button className="solid-btn" disabled={pending}>{pending ? "Please wait..." : "Log In"}</button>
-}
 
-type Props = {
-  onLogin?: () => void,
-}
-export default function Login ({ onLogin }: Props) {
+export default function Login() {
 
-  const [formFields, setFormFields] = useState({ username: "", password: "" })
-  const [errorMessage, setError] = useState("")
-  
-  const logIn = async (formData: FormData) => {
+  const [formFields, setFormFields] = useState<Credentials>({ username: "", password: "" })
 
-    const submitted = {
-      username: formData.get("username") as string,
-      password: formData.get("password") as string
-    }
+  const queryClient = useQueryClient()
 
-    try {
-
-      // Fetch salt
-      let res: Response
-      try {
-        res = await fetch(`/api/hash-information?username=${submitted.username}`, {
-          signal: AbortSignal.timeout(2000)
-        })
-      } catch (e) {
-        throw "could not reach server"
-      }
-      if (!res.ok) {
-        if (res.status == 404) throw "user does not exist"
-        else if (res.status == 429) throw "rate limit hit"
-        else if (res.status >= 500) throw "internal server error"
-        else throw "unknown error"
-      }
-      const salt = Uint8Array.fromBase64((await res.json()).salt)
-
-      // Log in
-      try {
-        const hash = await PBKDF2HashBase64(submitted.password, salt, 500000, 256) // Needed seperate variable otherwise timeout would start when hash is being created, before the request is sent
-        res = await fetch("/api/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          signal: AbortSignal.timeout(2000),
-          body: JSON.stringify({
-            username: submitted.username,
-            hash
-          })
-        })
-      } catch (e) {
-        throw "could not reach server"
-      }
-      if (!res.ok) {
-        if (res.status == 401) throw "incorrect password"
-        else if (res.status == 429) throw "rate limit hit"
-        else if (res.status >= 500) throw "internal server error"
-        else throw "unknown error"
-      }
-
-      // Success
-      onLogin?.()
+  const login = useMutation({
+    mutationFn: loginUser,
+    retry: false,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["session"] })
       window.location.href = "/app/home"
-      
-
-    } catch (e) {
-      setError(typeof e === "string" ? e : "unknown error")
-      setFormFields(submitted) // Restore the form fields after React has deleted them
-    }
-
-  }
+    },
+  })
 
 
   return (
     <main>
       <h1>Log In</h1>
-      <form action={logIn}>
+      <form onSubmit={(event) => {
+        event.preventDefault()
+        if (!login.isPending) login.mutate(formFields)
+      }}>
         <label>
           Username
           <input
@@ -88,7 +34,8 @@ export default function Login ({ onLogin }: Props) {
             name="username"
             autoComplete="username"
             spellCheck="false"
-            defaultValue={formFields.username}
+            value={formFields.username}
+            onChange={(event) => setFormFields({ ...formFields, username: event.target.value })}
             maxLength={63}
             pattern="[\w\-]+"
             title="Must consist of letters, numbers, underscore, and hyphen."
@@ -101,12 +48,15 @@ export default function Login ({ onLogin }: Props) {
             type="password"
             name="password"
             autoComplete="current-password"
-            defaultValue={formFields.password}
+            value={formFields.password}
+            onChange={(event) => setFormFields({ ...formFields, password: event.target.value })}
             required
           />
         </label>
-        {errorMessage && <span className="inline-error">Error: {errorMessage}</span>}
-        <LogInBtn />
+        {login.error && <span className="inline-error" role="alert">Error: {login.error.message}</span>}
+        <button className="solid-btn" disabled={login.isPending}>
+          {login.isPending ? "Please wait..." : "Log In"}
+        </button>
       </form>
       <a href="/app/home">Back to Home</a>
     </main>

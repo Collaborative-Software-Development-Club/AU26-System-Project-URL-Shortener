@@ -1,74 +1,33 @@
 import { useState } from "react"
-import { useFormStatus } from "react-dom"
+import { QueryClient, useMutation, useQueryClient } from "@tanstack/react-query"
 
-import { PBKDF2HashBase64 } from "./auth"
+import { createAccount as createAccountUser, type Credentials } from "./API"
 
-const CreateAccountBtn = () => {
-  const { pending } = useFormStatus()
-  return <button className="solid-btn" disabled={pending}>{pending ? "Please wait..." : "Create Account"}</button>
-}
 
-type Props = {
-  onLogin?: () => void
-}
-export default function CreateAccount({ onLogin }: Props) {
+export default function CreateAccount() {
 
-  const [formFields, setFormFields] = useState({ username: "", password: "" })
-  const [errorMessage, setError] = useState("")
+  const [formFields, setFormFields] = useState<Credentials>({ username: "", password: "" })
 
-  const createAccount = async (formData: FormData) => {
+  const queryClient = useQueryClient()
 
-    const submitted = {
-      username: formData.get("username") as string,
-      password: formData.get("password") as string
-    }
-
-    try {
-      
-      // Generate hash
-      const salt = crypto.getRandomValues(new Uint8Array(16))
-
-      let res: Response
-      try {
-        const hash = await PBKDF2HashBase64(submitted.password, salt, 500000, 256) // Needed seperate variable otherwise timeout would start when hash is being created, before the request is sent
-        res = await fetch("/api/create-account", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          signal: AbortSignal.timeout(2000),
-          body: JSON.stringify({
-            username: submitted.username,
-            hash,
-            salt: salt.toBase64()
-          })
-        })
-      } catch (e) {
-        throw "could not reach server"
-      }
-
-      if (!res.ok) {
-        if (res.status == 409) throw "username already taken"
-        else if (res.status == 429) throw "rate limit hit"
-        else if (res.status >= 500) throw "internal server error"
-        else throw "unknown error"
-      }
-
-      // Success
-      onLogin?.()
+  const createAccount = useMutation({
+    mutationFn: createAccountUser,
+    retry: false,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["session"] })
       window.location.href = "/app/home"
-
-
-    } catch (e) {
-      setError(typeof e === "string" ? e : "unknown error")
-      setFormFields(submitted) // Restore the form fields after React has deleted them
-    }
-  }
+    },
+  })
 
 
   return (
     <main>
       <h1>Create Account</h1>
       <p>Making an account lets you edit the destination of all the URLs you create!</p>
-      <form action={createAccount}>
+      <form onSubmit={(event) => {
+        event.preventDefault()
+        if (!createAccount.isPending) createAccount.mutate(formFields)
+      }}>
         <label>
           Username
           <input
@@ -76,7 +35,8 @@ export default function CreateAccount({ onLogin }: Props) {
             name="username"
             autoComplete="username"
             spellCheck="false"
-            defaultValue={formFields.username}
+            value={formFields.username}
+            onChange={(event) => setFormFields({ ...formFields, username: event.target.value })}
             maxLength={63}
             pattern="[\w\-]+"
             title="Must consist of letters, numbers, underscore, and hyphen."
@@ -89,12 +49,15 @@ export default function CreateAccount({ onLogin }: Props) {
             type="password"
             name="password"
             autoComplete="new-password"
-            defaultValue={formFields.password}
+            value={formFields.password}
+            onChange={(event) => setFormFields({ ...formFields, password: event.target.value })}
             required
           />
         </label>
-        {errorMessage && <span className="inline-error">Error: {errorMessage}</span>}
-        <CreateAccountBtn />
+        {createAccount.error && <span className="inline-error" role="alert">Error: {createAccount.error.message}</span>}
+        <button className="solid-btn" disabled={createAccount.isPending}>
+          {createAccount.isPending ? "Please wait..." : "Create Account"}
+        </button>
       </form>
       <a href="/app/home">Back to Home</a>
     </main>

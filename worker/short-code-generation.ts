@@ -40,6 +40,7 @@ const numToAlphabet = (a: number, b: number, domain: number, length: number): st
 }
 
 
+/*
 const alphabetToNum = (str: string, domain: number): number[] => {
   let a = 0, b = 0
   for (const char of str) {
@@ -55,6 +56,7 @@ const alphabetToNum = (str: string, domain: number): number[] => {
   }
   return [a, b]
 }
+*/
 
 
 const encrypt = async (otherHalf: number, common: number, round: number, domain: number, reverseMultiplier = 1): Promise<number> => {
@@ -98,6 +100,7 @@ export const encode = async (id: number): Promise<string> => {
 }
 
 
+/*
 export const decode = async (code: string): Promise<number> => {
   const cipherDomain = Math.ceil(2 ** (code.length * ALPHABET_BITS / 2))
   if (cipherDomain > Number.MAX_SAFE_INTEGER / (ALPHABET.length + 1)) throw new InvalidCodeError()
@@ -115,3 +118,4 @@ export const decode = async (code: string): Promise<number> => {
   ) throw new InvalidCodeError()
   return a * Math.floor(cipherDomain / SPACE_MULTIPLIER) + Math.floor((cipherDomain % SPACE_MULTIPLIER * a + b) / SPACE_MULTIPLIER) // Equivalent to: plaintext / spaceMultiplier
 }
+*/
